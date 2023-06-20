@@ -1,2 +1,2 @@
 # DeclarativeProcessSimulation
-Modeling Extraneous Activity Delays in Business Process Simulation
+Automated Generation of Process Simulation Scenarios from Declarative Control-Flow Changes
