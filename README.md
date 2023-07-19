@@ -31,6 +31,20 @@ conda activate deep_generator
 
 ## Running the script
 
+### Training the model 
+Train the model with the input event log.
+```
+python dg_training.py -f event-log-name.xes
+```
+This generates a folder in output_files. Copy that folder name into dg_prediction.py and replace the value of the variable parameters['folder'].
+
+### Generate predictions
+Train the model with the input event log.
+```
+python dg_prediction.py
+```
+This generates a simulation process model corresponding to the implementation of the changes proposed by the user. The simulation files are stored in output_files/simulation_files/. In addition, the approach simulates that simulation process model and generates a statistics file corresponding to the stats of the simulated model. The simulation stats are stored in output_files/simulation_stats/.
+
 ## Examples
 
 ## Authors
