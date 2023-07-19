@@ -46,6 +46,7 @@ python dg_prediction.py
 This generates a simulation process model corresponding to the implementation of the changes proposed by the user. The simulation files are stored in output_files/simulation_files/. In addition, the approach simulates that simulation process model and generates a statistics file corresponding to the stats of the simulated model. The simulation stats are stored in output_files/simulation_stats/.
 
 ## Examples
+The files used for the experimentation are stored in input_files.
 
 ## Authors
 
