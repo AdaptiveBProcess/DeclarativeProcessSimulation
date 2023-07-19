@@ -9,7 +9,7 @@ The code here presented is able to execute different pre- and post-processing me
 * Discover the stochastic process model and generate a simulation based on the rules given by the user.
 ## Architecture
 
-![plot](images/Pipeline 2.png)
+![alt text](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/blob/main/images/Pipeline%202.png)
 
 
 ## Getting Started
