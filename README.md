@@ -7,6 +7,10 @@ The code here presented is able to execute different pre- and post-processing me
 * Generate traces that adhere to a corresponding set of rules given by the user.
 * Predict the remaining time and the continuation (suffix) of an incomplete business process trace.
 * Discover the stochastic process model and generate a simulation based on the rules given by the user.
+## Architecture
+
+![plot](images/Pipeline 2.png)
+
 
 ## Getting Started
 
