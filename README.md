@@ -11,6 +11,11 @@ The code here presented is able to execute different pre- and post-processing me
 
 ![alt text](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/blob/main/images/Pipeline%202.png)
 
+## System Requirements
+* Python 3.x
+* Java SDK 1.8 Choose right version according with Operative System.
+* Anaconda Distribution
+* Git
 
 ## Getting Started
 
@@ -22,24 +27,30 @@ git clone https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation.git
 
 ### Prerequisites
 
-To execute this code you just need to install Anaconda in your system and create an environment using the *environment.yml* specification provided in the repository.
+To execute this code with the previous Anaconda install in your system, create an environment using the *environment.yml* specification provided in the repository.
 ```
 cd GenerativeLSTM
 conda env create -f environment.yml
 conda activate deep_generator
 ```
+Be sure when running this script to be using Conda prompt or to configure conda into another prompt
+
+Here is an example here for adding conda to Windows prompt in vs-code if needed
+https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-studio-code
 
 ## Running the script
 
 ### Training the model 
 Train the model with the input event log.
 ```
-python dg_training.py -f event-log-name.xes
+python dg_training.py -f {event-log-name}.xes
 ```
-This generates a folder in output_files. Copy that folder name into dg_prediction.py and replace the value of the variable parameters['folder'].
+This generates a folder in output_files. **Copy that folder name into dg_prediction.py and replace the value of the variable parameters['folder'].**
 
 ### Generate predictions
 Train the model with the input event log.
+
+When training the model, be sure to use the appropiate rules related to the BPMN model that is being used. **Rules.ini** gives an idea of which rules can be used to ensure simulation data goes as well as posible
 ```
 python dg_prediction.py
 ```
@@ -47,6 +58,7 @@ This generates a simulation process model corresponding to the implementation of
 
 ## Examples
 The files used for the experimentation are stored in input_files.
+
 
 ## Authors
 
