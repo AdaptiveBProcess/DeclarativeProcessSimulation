@@ -9,6 +9,7 @@ The code here presented is able to execute different pre- and post-processing me
 * Discover the stochastic process model and generate a simulation based on the rules given by the user.
 ## Architecture
 
+
 ![alt text](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/blob/main/images/Pipeline%202.png)
 
 ## System Requirements
@@ -45,9 +46,12 @@ Train the model with the input event log.
 ```
 python dg_training.py -f {event-log-name}.xes
 ```
+
 This generates a folder in output_files. **Copy that folder name into dg_prediction.py and replace the value of the variable parameters['folder'].**
 
 ### Generate predictions
+For this step Java 1.8 SDK is needed.
+
 Train the model with the input event log.
 
 When training the model, be sure to use the appropiate rules related to the BPMN model that is being used. **Rules.ini** gives an idea of which rules can be used to ensure simulation data goes as well as posible
