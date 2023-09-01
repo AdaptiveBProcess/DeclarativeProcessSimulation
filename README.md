@@ -54,11 +54,14 @@ For this step Java 1.8 SDK is needed.
 
 Train the model with the input event log.
 
+Before starting this step in the route \GenerativeLSTM\output_files please create a folder named \GenerativeLSTM\output_files\simulation_files for the program to find the exact route.
+
 When training the model, be sure to use the appropiate rules related to the BPMN model that is being used. **Rules.ini** gives an idea of which rules can be used to ensure simulation data goes as well as posible
 ```
 python dg_prediction.py
 ```
 This generates a simulation process model corresponding to the implementation of the changes proposed by the user. The simulation files are stored in output_files/simulation_files/. In addition, the approach simulates that simulation process model and generates a statistics file corresponding to the stats of the simulated model. The simulation stats are stored in output_files/simulation_stats/.
+
 
 ## Examples
 The files used for the experimentation are stored in input_files.
