@@ -161,7 +161,7 @@ class Simod():
                                          self.bpmn,
                                          self.process_graph,
                                          self.settings)
-        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())//3
+        num_inst = len(pd.DataFrame(self.log_test).caseid.unique())
         start_time = (pd.DataFrame(self.log_test)
                       .start_timestamp.min().strftime("%Y-%m-%dT%H:%M:%S.%f+00:00"))
         p_extractor.extract_parameters(num_inst, start_time)
@@ -202,7 +202,7 @@ class Simod():
         reps = self.settings['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
-        pool = Pool(processes=1)
+        pool = Pool(processes=w_count)
         # Simulate
         args = [(self.settings, rep) for rep in range(reps)]
         p = pool.map_async(self.execute_simulator, args)
@@ -235,23 +235,19 @@ class Simod():
             """
             # message = 'Reading log repetition: ' + str(rep+1)
             # print(message)
-            try:
-                path = os.path.join(settings['output'], 'sim_data')
-                log_name = settings['file'].split('.')[0]+'_'+str(rep+1)+'.csv'
-                rep_results = pd.read_csv(os.path.join(path, log_name),
-                                        dtype={'caseid': object})
-                rep_results['caseid'] = 'Case' + rep_results['caseid']
-                rep_results['run_num'] = rep
-                rep_results['source'] = 'simulation'
-                rep_results.rename(columns={'resource': 'user'}, inplace=True)
-                rep_results['start_timestamp'] =  pd.to_datetime(
-                    rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
-                rep_results['end_timestamp'] =  pd.to_datetime(
-                    rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
-                return rep_results
-            except:
-                print('No files founded.')
-                return pd.DataFrame()
+            path = os.path.join(settings['output'], 'sim_data')
+            log_name = settings['file'].split('.')[0]+'_'+str(rep+1)+'.csv'
+            rep_results = pd.read_csv(os.path.join(path, log_name),
+                                      dtype={'caseid': object})
+            rep_results['caseid'] = 'Case' + rep_results['caseid']
+            rep_results['run_num'] = rep
+            rep_results['source'] = 'simulation'
+            rep_results.rename(columns={'resource': 'user'}, inplace=True)
+            rep_results['start_timestamp'] =  pd.to_datetime(
+                rep_results['start_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            rep_results['end_timestamp'] =  pd.to_datetime(
+                rep_results['end_timestamp'], format='%Y-%m-%d %H:%M:%S.%f')
+            return rep_results
         return read(*args)
 
     @staticmethod
@@ -297,7 +293,6 @@ class Simod():
                     os.path.join(settings['output'], 'sim_data',
                                   settings['file']
                                   .split('.')[0]+'_'+str(rep+1)+'.csv')]
-            print(args)
             subprocess.run(args, check=True, stdout=subprocess.PIPE)
         sim_call(*args)
 
@@ -619,10 +614,9 @@ class DiscoveryOptimizer():
         reps = self.settings['gl']['repetitions']
         cpu_count = multiprocessing.cpu_count()
         w_count =  reps if reps <= cpu_count else cpu_count
-        pool = Pool(processes=1)
+        pool = Pool(processes=w_count)
         # Simulate
         args = [(self.settings['gl'], rep) for rep in range(reps)]
-        print(w_count)
         p = pool.map_async(self.execute_simulator, args)
         pbar_async(p, 'simulating:')
         # Read simulated logs

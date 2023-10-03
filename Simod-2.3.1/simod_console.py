@@ -34,7 +34,7 @@ def main(argv):
         except getopt.GetoptError:
             print('Invalid option')
             sys.exit(2)
-    settings['repetitions'] = 10
+    settings['repetitions'] = 1
     settings['simulation'] = True
     settings['sim_metric'] = 'tsd'
     settings['add_metrics'] = ['day_hour_emd', 'log_mae', 'dl', 'mae']
@@ -55,7 +55,7 @@ def main(argv):
     # 'manual', 'automatic', 'semi-automatic'
     settings['pdef_method'] = 'automatic'
     settings['res_support'] = 0.05  # [0..1]
-    settings['res_confidence'] = 50    # [50..85]
+    settings['res_confidence'] = 70    # [50..85]
     settings['arr_support'] = 0.05   # [0..1]
     settings['arr_confidence'] = 10 # [50..85]
     optimizer = sim.Simod(settings)

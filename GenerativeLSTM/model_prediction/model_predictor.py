@@ -16,8 +16,8 @@ import configparser as cp
 import readers.log_reader as lr
 import utils.support as sup
 
-from model_training import features_manager as feat
-from model_prediction import interfaces as it
+from GenerativeLSTM.model_training import features_manager as feat
+from GenerativeLSTM.model_prediction import interfaces as it
 import analyzers.sim_evaluator as ev
 from support_modules import traces_evaluation as te
 from support_modules import xes_writer as xw
@@ -28,7 +28,7 @@ class ModelPredictor():
     """
 
     def __init__(self, parms):
-        self.output_route = os.path.join('output_files', parms['folder'])
+        self.output_route = os.path.join('GenerativeLSTM','output_files', parms['folder'])
         self.parms = parms
         # load parameters
         self.load_parameters()
@@ -42,7 +42,11 @@ class ModelPredictor():
         self.model_def = dict()
         self.read_model_definition(self.parms['model_type'])
         self.parms['additional_columns'] = self.model_def['additional_columns']
-        self.acc = self.execute_predictive_task()
+        try:
+            self.acc = self.execute_predictive_task()
+        except TypeError as e:
+            print("Rule definition is incorrect, please check rules.ini")
+            exit(1)
 
     def execute_predictive_task(self):
         # create examples for next event and suffix
@@ -62,16 +66,16 @@ class ModelPredictor():
         # predict
         self.imp = self.parms['variant']
 
-        org_log_path = os.path.join('output_files', self.parms['folder'], 'parameters', '{}_ASIS.csv'.format(self.parms['log_name']))
+        org_log_path = os.path.join('GenerativeLSTM','output_files', self.parms['folder'], 'parameters', '{}_ASIS.csv'.format(self.parms['log_name']))
         df_org = pd.read_csv(org_log_path)
         
-        df_org['start_timestamp'] = pd.to_datetime(df_org['start_timestamp'], format='ISO8601')
-        df_org['end_timestamp'] = pd.to_datetime(df_org['end_timestamp'], format='ISO8601')
+        df_org['start_timestamp'] = pd.to_datetime(df_org['start_timestamp'])
+        df_org['end_timestamp'] = pd.to_datetime(df_org['end_timestamp'])
 
         self.parms['ac_index'] = self.index_ac = {self.parms['index_ac'][key]:key for key in self.parms['index_ac'].keys()}
         self.parms['rules'] = te.extract_rules()
 
-        self.parms['traces_gen_path'] = os.path.join('output_files', self.parms['folder'], 'parameters', 'traces_generated')
+        self.parms['traces_gen_path'] = os.path.join('GenerativeLSTM','output_files', self.parms['folder'], 'parameters', 'traces_generated')
         if not os.path.exists(self.parms['traces_gen_path']):
             os.mkdir(self.parms['traces_gen_path'])
 
@@ -123,29 +127,33 @@ class ModelPredictor():
         path = os.path.join(self.output_route,
                             'parameters',
                             'model_parameters.json')
-        with open(path) as file:
-            data = json.load(file)
-            if 'activity' in data:
-                del data['activity']
-            parms = {k: v for k, v in data.items()}
-            parms.pop('rep', None)
-            self.parms = {**self.parms, **parms}
-            if 'dim' in data.keys():
-                self.parms['dim'] = {k: int(v) for k, v in data['dim'].items()}
-            if self.parms['one_timestamp']:
-                self.parms['scale_args'] = {
-                    k: float(v) for k, v in data['scale_args'].items()}
-            else:
-                for key in data['scale_args'].keys():
-                    self.parms['scale_args'][key] = {
-                        k: float(v) for k, v in data['scale_args'][key].items()}
-            self.parms['index_ac'] = {int(k): v
-                                      for k, v in data['index_ac'].items()}
-            self.parms['index_rl'] = {int(k): v
-                                      for k, v in data['index_rl'].items()}
-            file.close()
-            self.ac_index = {v: k for k, v in self.parms['index_ac'].items()}
-            self.rl_index = {v: k for k, v in self.parms['index_rl'].items()}
+        try: 
+            with open(path) as file:
+                data = json.load(file)
+                if 'activity' in data:
+                    del data['activity']
+                parms = {k: v for k, v in data.items()}
+                parms.pop('rep', None)
+                self.parms = {**self.parms, **parms}
+                if 'dim' in data.keys():
+                    self.parms['dim'] = {k: int(v) for k, v in data['dim'].items()}
+                if self.parms['one_timestamp']:
+                    self.parms['scale_args'] = {
+                        k: float(v) for k, v in data['scale_args'].items()}
+                else:
+                    for key in data['scale_args'].keys():
+                        self.parms['scale_args'][key] = {
+                            k: float(v) for k, v in data['scale_args'][key].items()}
+                self.parms['index_ac'] = {int(k): v
+                                        for k, v in data['index_ac'].items()}
+                self.parms['index_rl'] = {int(k): v
+                                        for k, v in data['index_rl'].items()}
+                file.close()
+                self.ac_index = {v: k for k, v in self.parms['index_ac'].items()}
+                self.rl_index = {v: k for k, v in self.parms['index_rl'].items()}
+        except FileNotFoundError as e:
+            print("File not found, please verify ID of the trained model", e)
+            exit(1)
 
     def sampling(self, sampler):
         sampler.register_sampler(self.parms['model_type'],
@@ -198,7 +206,7 @@ class ModelPredictor():
             'one_timestamp': self.parms['read_options']['one_timestamp'],
             'filter_d_attrib': self.parms['read_options']['filter_d_attrib']
         }
-        self.parms['output_file'] = os.path.join('input_files', 'spmd', self.parms['log_name'] + '.xes')
+        self.parms['output_file'] = os.path.join('GenerativeLSTM','input_files', 'spmd', self.parms['log_name'] + '.xes')
 
         xw.XesWriter(final_log, self.parms)
 
@@ -256,7 +264,7 @@ class ModelPredictor():
 
     def read_model_definition(self, model_type):
         Config = cp.ConfigParser(interpolation=None)
-        Config.read('models_spec.ini')
+        Config.read('GenerativeLSTM/models_spec.ini')
         #File name with extension
         self.model_def['additional_columns'] = sup.reduce_list(
             Config.get(model_type,'additional_columns'), dtype='str')
