@@ -23,9 +23,22 @@ The code here presented is able to execute different pre- and post-processing me
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
 
 ```
-git clone https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation.git
+git clone --recurse-submodules https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation.git
 ```
+Once the repository has been cloned, you can update the submodules at any time using the following command:
 
+```
+git submodule update --init --recursive
+
+```
+For Simod it is necessary to update version with this commands
+
+```
+cd Simod-2.3.1
+git checkout v2.3.1
+cd ..
+
+```
 ### Prerequisites
 
 To execute this code with the previous Anaconda install in your system, create an environment using the *environment.yml* specification provided in the repository.
