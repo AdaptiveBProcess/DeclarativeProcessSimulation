@@ -9,7 +9,8 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sys
 import getopt
-
+import glob
+from get_folder import ReturnFolderName
 from GenerativeLSTM.model_training import model_trainer as tr
 
 
@@ -39,7 +40,7 @@ def main(argv):
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # Event-log filename
-        parameters['file_name'] = 'ConsultaDataMining201618.xes'
+        parameters['file_name'] = 'PurchasingExample.xes'
         parameters['model_family'] = 'lstm'
         parameters['opt_method'] = 'bayesian'  # 'rand_hpc', 'bayesian'
         parameters['max_eval'] = 10
@@ -83,7 +84,8 @@ def main(argv):
     parameters.pop('model_family', None)
     # Train models
     tr.ModelTrainer(parameters)
-
+    most_recent_folder = ReturnFolderName()
+    print(most_recent_folder)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
