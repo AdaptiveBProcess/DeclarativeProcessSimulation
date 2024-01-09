@@ -31,16 +31,16 @@ Once the repository has been cloned, you can update the submodules at any time u
 git submodule update --init --recursive
 
 ```
-For Simod it is necessary to update version with this commands
+For Simod and GenerativeLSTM it is necessary to update version with this commands
 
 ```
-cd Simod-2.3.1
+cd GenerativeLSTM 
 git checkout Declarative-Process
 cd ..
 Generative LSTM branch
 
 ```
-cd GenerativeLSTM
+cd Simod-2.3.1
 git checkout v2.3.1
 cd ..
 
@@ -60,8 +60,25 @@ https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-stu
 
 ## Running the script
 
+###
+ To choose event-log the log must be in GenerativeLSTM\input_files 
+ line 43 on dg_training.py must be modified with the name of the event log, as the other parameters as model_family or opt_methods.
+ After this training is done, a folder with this format "YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX" is generated on  this folder GenerativeLSTM\output_files 
+ On dg_prediction.py line 140 with
+```python  
+ "parameters['filename'] = ''"
+```
+
+Change the name to the event log previously used on training
+On line 159
+
+```python
+parameters['folder'] = '20231108_6C6C0160_30A5_4D24_A252_7F74CBF9E225'
+```
+
 ### Training the model 
 Train the model with the input event log.
+
 ```
 python dg_training.py -f {event-log-name}.xes
 ```
