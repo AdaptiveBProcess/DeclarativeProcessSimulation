@@ -69,18 +69,14 @@ https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-stu
  "parameters['filename'] = ''"
 ```
 
-Change the name to the event log previously used on training
-On line 159
+Change the name to the event log previously used on training on dg_prediction.py
 
-```python
-parameters['folder'] = '20231108_6C6C0160_30A5_4D24_A252_7F74CBF9E225'
-```
 
 ### Training the model 
 Train the model with the input event log.
 
 ```
-python dg_training.py -f {event-log-name}.xes
+python dg_training.py
 ```
 
 This generates a folder in output_files. **Copy that folder name into dg_prediction.py and replace the value of the variable parameters['folder'].**
@@ -91,6 +87,12 @@ For this step Java 1.8 SDK is needed.
 Train the model with the input event log.
 
 Before starting this step in the route \GenerativeLSTM\output_files please create a folder named \GenerativeLSTM\output_files\simulation_files for the program to find the exact route.
+
+On line 159 this parameter must be modified with the folder that was generated after the training.
+
+```python
+parameters['folder'] = 'YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX'
+```
 
 When training the model, be sure to use the appropiate rules related to the BPMN model that is being used. **Rules.ini** gives an idea of which rules can be used to ensure simulation data goes as well as posible
 ```
