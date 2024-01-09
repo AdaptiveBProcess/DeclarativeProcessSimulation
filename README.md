@@ -35,6 +35,12 @@ For Simod it is necessary to update version with this commands
 
 ```
 cd Simod-2.3.1
+git checkout Declarative-Process
+cd ..
+Generative LSTM branch
+
+```
+cd GenerativeLSTM
 git checkout v2.3.1
 cd ..
 
