@@ -53,6 +53,8 @@ cd GenerativeLSTM
 conda env create -f environment.yml
 conda activate deep_generator
 ```
+
+
 Be sure when running this script to be using Conda prompt or to configure conda into another prompt
 
 Here is an example here for adding conda to Windows prompt in vs-code if needed
@@ -60,7 +62,6 @@ https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-stu
 
 ## Running the script
 
-###
  To choose event-log the log must be in GenerativeLSTM\input_files 
  line 43 on dg_training.py must be modified with the name of the event log, as the other parameters as model_family or opt_methods.
  After this training is done, a folder with this format "YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX" is generated on  this folder GenerativeLSTM\output_files 
@@ -87,6 +88,25 @@ For this step Java 1.8 SDK is needed.
 Train the model with the input event log.
 
 Before starting this step in the route \GenerativeLSTM\output_files please create a folder named \GenerativeLSTM\output_files\simulation_files for the program to find the exact route.
+
+Archive GenerativeLSTM\rules.ini must be modified to make the rules correctly
+
+Rules have this structure and must be written with this format
+
+# RULES SPECIFICATION
+#- Directly folllows: A >> B
+#- Eventually folllows: A >> * >> B
+#- Task required: A
+#- Task not allowed: ^A
+
+Here is an example for rules.ini
+
+```ini
+# Production
+[RULES]
+path =  Validar solicitud >> Radicar Solicitud Homologacion
+variation = =1
+```
 
 On line 159 this parameter must be modified with the folder that was generated after the training.
 
