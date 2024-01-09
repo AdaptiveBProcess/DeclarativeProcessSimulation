@@ -93,10 +93,15 @@ Archive GenerativeLSTM\rules.ini must be modified to make the rules correctly
 
 Rules have this structure and must be written with this format
 
-# RULES SPECIFICATION
+
+Rules specification
+
 #- Directly folllows: A >> B
+
 #- Eventually folllows: A >> * >> B
+
 #- Task required: A
+
 #- Task not allowed: ^A
 
 Here is an example for rules.ini
