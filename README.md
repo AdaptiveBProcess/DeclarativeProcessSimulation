@@ -54,6 +54,7 @@ cd GenerativeLSTM
 conda env create -f environment.yml
 conda activate deep_generator
 ```
+In GenerativeLSTM\output_files please create two folders GenerativeLSTM\output_files\simulation_files and GenerativeLSTM\output_files\simulation_stats, this is for the correct creation of the model
 
 Be sure when running this script to be using Conda prompt or to configure conda into another prompt
 
@@ -114,7 +115,7 @@ path =  Validar solicitud >> Radicar Solicitud Homologacion
 variation = =1
 ```
 
-On line 159 this parameter must be modified with the folder that was generated after the training.
+On line 159 on dg_prediction.py this parameter must be modified with the folder that was generated after the training.
 
 ```python
 parameters['folder'] = 'YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX'
