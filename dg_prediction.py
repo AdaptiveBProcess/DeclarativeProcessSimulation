@@ -57,6 +57,7 @@ def call_simod(file_name):
     #Delete event log file from Simod
     os.remove(destination_file)
     print("finished SIMOD")
+    
 def call_spmd(parameters):
     print('----------------------------------------------------------------------')
     print('--------------  RUNNING Stochastic Process Model  --------------------')
@@ -95,6 +96,7 @@ def call_spmd(parameters):
     settings['eta'] = parameters['eta']
 
     settings['log_path'] = os.path.join('GenerativeLSTM','input_files', settings['file'] + '.xes')
+    settings['log_path_tobe'] = os.path.join('GenerativeLSTM','input_files', 'spmd', settings['file'] + '.xes')
     settings['tobe_bpmn_path'] = os.path.join('GenerativeLSTM','input_files', 'spmd', settings['file'] + '.bpmn')
     print(os.path.join('GenerativeLSTM','input_files', settings['file'] + '.xes'))
     print(os.path.join('GenerativeLSTM','input_files', 'spmd', settings['file'] + '.bpmn'))
@@ -137,6 +139,9 @@ def main(argv):
         'filter_d_attrib': False}
     
     parameters['filename'] = 'ConsultaDataMining201618.xes'
+    #parameters['filename'] = 'PurchasingExample.xes'
+    #parameters['filename'] = 'RunningExample.xes'
+    #parameters['filename'] = 'Production.xes'
     parameters['input_path'] = 'GenerativeLSTM/input_files'
 
     parameters['sm3_path'] = os.path.join('GenerativeLSTM','external_tools', 'splitminer3', 'bpmtk.jar')
@@ -150,12 +155,14 @@ def main(argv):
         # predict_next, pred_sfx
         parameters['activity'] = 'pred_log'
 
-        #PurchasingExample:'20230901_D4F6CAA8_47EF_45DD_B2E7_7EB998EBAE91' 
-        #Production: '20230615_FF2C5479_8FD9_4E8A_9473_F298F8D2618D'
-        #RunningExample: '20230901_B93F97FD_D150_422E_8E5F_550A398E3AD4'
-        #ConsultaDataMining201618: '20230901_3132D4F9_9047_429D_BAD8_C983228B2526'
-        
-        parameters['folder'] = '20230901_3132D4F9_9047_429D_BAD8_C983228B2526'
+        #PurchasingExample:
+        #parameters['folder'] = '20240410_1DE076F0_991C_4663_9471_181266EDA48E'
+        #Production:
+        #parameters['folder'] = '20240405_408B76AE_502A_4576_BBDB_D182EA5A47EC'
+        #RunningExample:
+        #parameters['folder'] = '20240411_C51DBDD1_BEB9_4FD6_B23A_5D34B81DE5E1'
+        #ConsultaDataMining:
+        parameters['folder'] = '20240410_92B1B91F_3AEE_42CB_963F_EA8B4320B30A'
         parameters['model_file'] = parameters['filename'].split('.')[0] + '.h5'
         parameters['log_name'] = parameters['model_file'].split('.')[0]
         parameters['is_single_exec'] = False  # single or batch execution

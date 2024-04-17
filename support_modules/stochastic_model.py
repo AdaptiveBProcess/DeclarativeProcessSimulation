@@ -18,7 +18,9 @@ class StochasticModel:
         self.extract_stochastic_model()
         
     def load_structures(self):
-        self.log = lr.LogReader(self.settings['log_path'], self.settings)
+        #self.log_path = os.path.join('GenerativeLSTM','input_files', 'spmd', 'ConsultaDataMining201618.csv')
+        self.log_path = os.path.join('GenerativeLSTM','input_files', 'spmd', self.settings['file'] + '.csv')
+        self.log = lr.LogReader(self.log_path, self.settings)
         self._sm3_miner()
         self.bpmn = br.BpmnReader(self.settings['tobe_bpmn_path'])
         self.model = create_process_structure(self.bpmn)
@@ -50,6 +52,7 @@ class StochasticModel:
                         'SMD',
                         str(self.settings['epsilon']), str(self.settings['eta']),
                         'false', 'false', 'false',
-                        self.settings['log_path'],
+                        #os.path.join('GenerativeLSTM','input_files', 'spmd', 'ConsultaDataMining201618.xes'),
+                        os.path.join('GenerativeLSTM','input_files', 'spmd', self.settings['file'] + '.xes'),
                         self.settings['tobe_bpmn_path'].replace('.bpmn', '')])
         subprocess.call(args)
