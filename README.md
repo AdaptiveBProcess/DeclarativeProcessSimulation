@@ -40,6 +40,7 @@ cd ..
 Generative LSTM branch
 
 ```
+```
 cd Simod-2.3.1
 git checkout v2.3.1
 cd ..
@@ -54,7 +55,6 @@ conda env create -f environment.yml
 conda activate deep_generator
 ```
 
-
 Be sure when running this script to be using Conda prompt or to configure conda into another prompt
 
 Here is an example here for adding conda to Windows prompt in vs-code if needed
@@ -66,8 +66,9 @@ https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-stu
  line 43 on dg_training.py must be modified with the name of the event log, as the other parameters as model_family or opt_methods.
  After this training is done, a folder with this format "YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX" is generated on  this folder GenerativeLSTM\output_files 
  On dg_prediction.py line 140 with
+ 
 ```python  
- "parameters['filename'] = ''"
+ parameters['filename'] = 'example.csv'
 ```
 
 Change the name to the event log previously used on training on dg_prediction.py
