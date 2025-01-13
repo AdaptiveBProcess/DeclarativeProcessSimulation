@@ -36,28 +36,50 @@ def call_simod(file_name):
     #Copy event log file to Simod
     try:
         source_file = os.path.join('GenerativeLSTM','input_files', file_name)
-        destination_file = os.path.join('Simod-2.3.1','inputs', file_name)
+        destination_file = os.path.join('..','Simod_Modified','Simod-2.3.1','inputs', file_name)
         print(source_file)
         print(destination_file)
         shutil.copy(source_file, destination_file)
-        
+
     except FileNotFoundError as e:
         print(e)
         exit(1)
 
     if file_name not in simod_files:
 
-        shutil.copy('bash.sh','Simod-2.3.1/bash.sh')
-        os.chdir('Simod-2.3.1/')
-        bash_command = 'bash.sh'
-        subprocess.run([bash_command, file_name], shell=True)
-        os.remove('bash.sh')
-        os.chdir('..')
-        
+        # Remove all the files inside Simod outputs
+        # outputs_folder = os.path.join('..', 'Simod_Modified', 'Simod-2.3.1', 'outputs')
+        # shutil.rmtree(outputs_folder, ignore_errors=True)
+        # os.makedirs(outputs_folder, exist_ok=True)
+        # Execute simod for the different Event logs
+        os.chdir('../Simod_Modified/Simod-2.3.1/')
+        simod_command = f'python simod_console.py -f {file_name} -m sm3'
+        try:
+            result = subprocess.run(simod_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            # Print the output and error
+            print("stdout:", result.stdout)
+            print("stderr:", result.stderr)
+        except Exception as e:
+            print(f"An error occurred while running the subprocess: {e}")
+
+        # Source folder
+        source_folder = os.path.join('Simod-2.3.1', 'outputs')
+
+        # Destination folder to copy the .bpmn files
+        destination_folder = os.path.join('GenerativeLSTM', 'input_files', 'simod')
+
+        # Find all .bpmn files within the source folder and copy them to the destination folder
+        for root, dirs, files in os.walk(source_folder):
+            for file in files:
+                if file.endswith('.bpmn'):
+                    shutil.copy(os.path.join(root, file), destination_folder)
+        print("Este es el nuevo")
+        os.chdir('../../DeclarativeProcessSimulation')
+
     #Delete event log file from Simod
-    os.remove(destination_file)
+    #os.remove(destination_file)
     print("finished SIMOD")
-    
+
 def call_spmd(parameters):
     print('----------------------------------------------------------------------')
     print('--------------  RUNNING Stochastic Process Model  --------------------')
@@ -115,7 +137,7 @@ def call_merger(parameters, spmd):
     settings['csv_output_path'] = os.path.join('GenerativeLSTM','output_files', 'simulation_stats', settings['file'] + '.csv')
     settings['output_path'] = os.path.join('GenerativeLSTM','output_files', 'simulation_files', settings['file'] + '.bpmn')
     settings['lrs'] = spmd.lrs
- 
+
 
     mod_mer = mm.MergeModels(settings)
 
@@ -133,11 +155,11 @@ def main(argv):
         #RunningExample: "%Y-%m-%d %H:%M:%S%z"
         #ConsultaDataMining201618: "%Y-%m-%d %H:%M:%S%z"
 
-        'timeformat': "%Y-%m-%d %H:%M:%S%Z",
+        'timeformat': "%Y-%m-%d %H:%M:%S%z",
         'column_names': column_names,
         'one_timestamp': parameters['one_timestamp'],
         'filter_d_attrib': False}
-    
+
     parameters['filename'] = 'ConsultaDataMining201618.xes'
     #parameters['filename'] = 'PurchasingExample.xes'
     #parameters['filename'] = 'RunningExample.xes'
@@ -149,20 +171,20 @@ def main(argv):
     parameters['concurrency'] = 0.0
     parameters['epsilon'] = 0.5
     parameters['eta'] = 0.7
-    
+
     # Parameters settled manually or catched by console for batch operations
     if not argv:
         # predict_next, pred_sfx
         parameters['activity'] = 'pred_log'
 
-        #PurchasingExample:
+        parameters['folder'] = '20250113_FF7FA8C2_1DD4_439F_9497_CFAA42E17814'
         #parameters['folder'] = '20240410_1DE076F0_991C_4663_9471_181266EDA48E'
         #Production:
         #parameters['folder'] = '20240405_408B76AE_502A_4576_BBDB_D182EA5A47EC'
         #RunningExample:
         #parameters['folder'] = '20240411_C51DBDD1_BEB9_4FD6_B23A_5D34B81DE5E1'
         #ConsultaDataMining:
-        parameters['folder'] = '20240410_92B1B91F_3AEE_42CB_963F_EA8B4320B30A'
+        #parameters['folder'] = '20241122_E603EA23_A73C_4494_9B80_DC7E8105DE7F'
         parameters['model_file'] = parameters['filename'].split('.')[0] + '.h5'
         parameters['log_name'] = parameters['model_file'].split('.')[0]
         parameters['is_single_exec'] = False  # single or batch execution
