@@ -11,6 +11,8 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import sys
 import getopt
 import shutil
+import yaml
+import argparse
 
 from GenerativeLSTM.model_prediction import model_predictor as pr
 from GenerativeLSTM import support_functions as sf
@@ -52,6 +54,7 @@ def call_simod(file_name):
         # shutil.rmtree(outputs_folder, ignore_errors=True)
         # os.makedirs(outputs_folder, exist_ok=True)
         # Execute simod for the different Event logs
+
         os.chdir('../Simod_Modified/Simod-2.3.1/')
         simod_command = f'python simod_console.py -f {file_name} -m sm3'
         try:
@@ -73,7 +76,6 @@ def call_simod(file_name):
             for file in files:
                 if file.endswith('.bpmn'):
                     shutil.copy(os.path.join(root, file), destination_folder)
-        print("Este es el nuevo")
         os.chdir('../../DeclarativeProcessSimulation')
 
     #Delete event log file from Simod
@@ -141,7 +143,19 @@ def call_merger(parameters, spmd):
 
     mod_mer = mm.MergeModels(settings)
 
+def load_config(config_file):
+    with open(config_file, 'r') as file:
+        return yaml.safe_load(file)
+    
 def main(argv):
+    
+    parser = argparse.ArgumentParser(description='Process some parameters.')
+    parser.add_argument('--config', type=str, required=True, help='Path to the config file')
+    args = parser.parse_args(argv)
+
+    config_file = args.config
+    config = load_config(config_file)
+    
     parameters = dict()
     column_names = {'Case ID': 'caseid',
                     'Activity': 'task',
@@ -178,13 +192,6 @@ def main(argv):
         parameters['activity'] = 'pred_log'
 
         parameters['folder'] = '20250113_FF7FA8C2_1DD4_439F_9497_CFAA42E17814'
-        #parameters['folder'] = '20240410_1DE076F0_991C_4663_9471_181266EDA48E'
-        #Production:
-        #parameters['folder'] = '20240405_408B76AE_502A_4576_BBDB_D182EA5A47EC'
-        #RunningExample:
-        #parameters['folder'] = '20240411_C51DBDD1_BEB9_4FD6_B23A_5D34B81DE5E1'
-        #ConsultaDataMining:
-        #parameters['folder'] = '20241122_E603EA23_A73C_4494_9B80_DC7E8105DE7F'
         parameters['model_file'] = parameters['filename'].split('.')[0] + '.h5'
         parameters['log_name'] = parameters['model_file'].split('.')[0]
         parameters['is_single_exec'] = False  # single or batch execution
@@ -194,15 +201,14 @@ def main(argv):
     else:
         # Catch parms by console
         try:
-            opts, _ = getopt.getopt(argv, "ho:a:f:c:b:v:r:",
-                                    ['one_timestamp=', 'activity=', 'folder=',
-                                     'model_file=', 'variant=', 'rep='])
-            for opt, arg in opts:
-                key = catch_parameter(opt)
-                if key in ['rep']:
-                    parameters[key] = int(arg)
-                else:
-                    parameters[key] = arg
+            parameters['filename'] = config['filename']
+            parameters['activity'] = config['activity']
+            parameters['folder'] = config['folder']
+            parameters['model_file'] = config['model_file']
+            parameters['log_name'] = config['log_name']
+            parameters['is_single_exec'] = config['is_single_exec']
+            parameters['variant'] = config['variant']
+            parameters['rep'] = config['rep'] 
         except getopt.GetoptError:
             print('Invalid option')
             sys.exit(2)
