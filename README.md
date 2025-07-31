@@ -133,7 +133,7 @@ The files used for the experimentation are stored in input_files.
 
 
 ## Authors
-
+* **David Seuqera**
 * **Daniel Baron**
 * **Manuel Camargo**
 * **Marlon Dumas**
