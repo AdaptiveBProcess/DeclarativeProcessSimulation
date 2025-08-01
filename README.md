@@ -1,6 +1,6 @@
 # Automated Generation of Process Simulation Scenarios from Declarative Control-Flow Changes
 
-This project enables automated training and generation of business process simulation scenarios based on declarative control-flow changes using deep learning (LSTM/GRU) models trained on event logs (in XES format). It includes modules for training, prediction, rule-based simulation, and end-to-end pipeline execution.
+This project enables automated training and generation of business process simulation scenarios based on declarative control-flow changes using deep learning (LSTM/GRU) models trained on event logs (in CSV format). It includes modules for training, prediction, rule-based simulation, and end-to-end pipeline execution.
 
 ---
 
@@ -92,7 +92,7 @@ mkdir -p output_files/simulation_stats
 
 ### 1. Place your event log
 
-Put the `.xes` log into:
+Put the `.csv` log into:
 
 ```bash
 0.logs/<log_name>/
@@ -101,7 +101,7 @@ Put the `.xes` log into:
 Modify `dg_training.py` to set the log name and model settings (line \~43):
 
 ```python
-parameters['filename'] = 'your_log_name.xes'
+parameters['filename'] = 'your_log_name.csv'
 ```
 
 Run training:
@@ -117,7 +117,7 @@ This will generate a new folder inside `1.predicton_models/<log_name>/`.
 In `dg_prediction.py`, update the folder and filename (lines \~140 and \~159):
 
 ```python
-parameters['filename'] = 'your_log_name.xes'
+parameters['filename'] = 'your_log_name.csv'
 parameters['folder'] = 'YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX'
 ```
 
@@ -146,7 +146,7 @@ Output:
 
 ## 📁 File Definitions
 
-* `0.logs`: Input XES logs.
+* `0.logs`: Input CSV logs.
 * `1.predicton_models`: Model checkpoints and generated traces.
 * `2.input_logs`: Intermediate preprocessed logs.
 * `2.hallucination_logs`: Traces generated using trained models and rules.
