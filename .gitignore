@@ -1,6 +1,16 @@
-data/*
-data_results_paper/*
+# Ignore data directories
+data/
+data_results_paper/
+
+# VS Code project files
 .vscode/
-**/__pycache__/
-support_modules/__pycache__/
-*.py[cod]
+
+# Python bytecode cache
+__pycache__/
+*/__pycache__/
+*/*/__pycache__/
+
+# Compiled Python files
+*.pyc
+*.pyo
+*.pyd

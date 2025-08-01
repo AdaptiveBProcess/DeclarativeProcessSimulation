@@ -1,139 +1,170 @@
 # Automated Generation of Process Simulation Scenarios from Declarative Control-Flow Changes
 
-The code here presented is able to execute different pre- and post-processing methods and architectures for building and using generative models from event logs in XES format using LSTM anf GRU neural networks. This code can perform the next tasks:
+This project enables automated training and generation of business process simulation scenarios based on declarative control-flow changes using deep learning (LSTM/GRU) models trained on event logs (in XES format). It includes modules for training, prediction, rule-based simulation, and end-to-end pipeline execution.
 
-* Training LSTM neuronal networks using an event log as input.
-* Generate full event logs using a trained LSTM neuronal network.
-* Generate traces that adhere to a corresponding set of rules given by the user.
-* Predict the remaining time and the continuation (suffix) of an incomplete business process trace.
-* Discover the stochastic process model and generate a simulation based on the rules given by the user.
-## Architecture
+---
 
+## 💡 Main Features
 
-![alt text](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/docs/main/images/Pipeline%202.png)
+* Train LSTM/GRU models using event logs.
+* Generate full event logs using trained models.
+* Apply declarative rules to constrain trace generation.
+* Predict suffix and remaining time of incomplete traces.
+* Discover BPMN process models and simulate their execution.
 
-## System Requirements
+---
+
+## 🧱 Architecture Overview
+
+![Pipeline](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/docs/main/images/Pipeline%202.png)
+
+---
+
+## 🗂️ New Modular Folder Structure
+
+```
+DeclarativeProcessSimulation/
+├───0.logs/                        # Raw event logs
+│   └───<log_name>/embedded_matix
+├───1.predicton_models/           # Trained models
+│   └───<log_name>/<model_folder>/parameters/traces_generated
+├───2.hallucination_logs/         # Generated synthetic traces
+├───2.input_logs/                 # Preprocessed input logs
+├───3.bps_asis/                   # BPMN models discovered (as-is)
+│   └───<log_name>/<run_id>/best_result
+├───3.bps_tobe/                   # BPMN models simulated (to-be)
+│   └───<log_name>/<run_id>/best_result
+└───4.simulation_results/         # Simulation statistics
+    └───<log_name>/<rule_applied>
+```
+
+---
+
+## ⚙️ System Requirements
+
 * Python 3.x
-* Java SDK 1.8 Choose right version according with Operative System.
+* Java SDK 1.8 (compatible version for your OS)
 * Anaconda Distribution
 * Git
 
-## Getting Started
+---
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+## 🚀 Getting Started
 
-```
+Clone the repository with submodules:
+
+```bash
 git clone --recurse-submodules https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation.git
-```
-Once the repository has been cloned, you can update the submodules at any time using the following command:
-
-```
+cd DeclarativeProcessSimulation
 git submodule update --init --recursive
-
 ```
-For Simod and GenerativeLSTM it is necessary to update version with this commands
 
-```
+Checkout specific branches:
+
+```bash
 cd GenerativeLSTM 
 git checkout Declarative-Process
 cd ..
-Generative LSTM branch
 
-```
-```
 cd Simod-2.3.1
 git checkout v2.3.1
 cd ..
-
 ```
-### Prerequisites
 
-To execute this code with the previous Anaconda install in your system, create an enviroment using the *enviroment.yml* specification provided in the repository.
-```
+### Set up the environment
+
+```bash
 cd GenerativeLSTM
-conda env create -f enviroment.yml
+conda env create -f environment.yml
 conda activate deep_generator
 ```
-In GenerativeLSTM\output_files please create two folders GenerativeLSTM\output_files\simulation_files and GenerativeLSTM\output_files\simulation_stats, this is for the correct creation of the model
 
-Be sure when running this script to be using Conda prompt or to configure conda into another prompt
+Create the following folders if not already present:
 
-Here is an example here for adding conda to Windows prompt in vs-code if needed
-https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-studio-code
-
-## Running the script
-
- To choose event-log the log must be in GenerativeLSTM\input_files 
- line 43 on dg_training.py must be modified with the name of the event log, as the other parameters as model_family or opt_methods.
- After this training is done, a folder with this format "YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX" is generated on  this folder GenerativeLSTM\output_files 
- On dg_prediction.py line 140 with
- 
-```python  
- parameters['filename'] = 'example.csv'
+```bash
+mkdir -p output_files/simulation_files
+mkdir -p output_files/simulation_stats
 ```
 
-Change the name to the event log previously used on training on dg_prediction.py
+---
 
+## 🧪 Running the Pipeline
 
-### Training the model 
-Train the model with the input event log.
+### 1. Place your event log
 
+Put the `.xes` log into:
+
+```bash
+0.logs/<log_name>/
 ```
+
+Modify `dg_training.py` to set the log name and model settings (line \~43):
+
+```python
+parameters['filename'] = 'your_log_name.xes'
+```
+
+Run training:
+
+```bash
 python dg_training.py
 ```
 
-This generates a folder in output_files. **Copy that folder name into dg_prediction.py and replace the value of the variable parameters['folder'].**
+This will generate a new folder inside `1.predicton_models/<log_name>/`.
 
-### Generate predictions
-For this step Java 1.8 SDK is needed.
+### 2. Prediction
 
-Train the model with the input event log.
-
-Before starting this step in the route \GenerativeLSTM\output_files please create a folder named \GenerativeLSTM\output_files\simulation_files for the program to find the exact route.
-
-Archive GenerativeLSTM\rules.ini must be modified to make the rules correctly
-
-Rules have this structure and must be written with this format
-
-
-Rules specification
-
-#- Directly folllows: A >> B
-
-#- Eventually folllows: A >> * >> B
-
-#- Task required: A
-
-#- Task not allowed: ^A
-
-Here is an example for rules.ini
-
-```ini
-# Production
-[RULES]
-path =  Validar solicitud >> Radicar Solicitud Homologacion
-variation = =1
-```
-
-On line 159 on dg_prediction.py this parameter must be modified with the folder that was generated after the training.
+In `dg_prediction.py`, update the folder and filename (lines \~140 and \~159):
 
 ```python
+parameters['filename'] = 'your_log_name.xes'
 parameters['folder'] = 'YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX'
 ```
 
-When training the model, be sure to use the appropiate rules related to the BPMN model that is being used. **Rules.ini** gives an idea of which rules can be used to ensure simulation data goes as well as posible
+Specify declarative rules in `rules.ini`, such as:
+
+```ini
+# Example Rule
+[RULES]
+path = TaskA >> TaskB
+variation = =1
 ```
+
+Run:
+
+```bash
 python dg_prediction.py
 ```
-This generates a simulation process model corresponding to the implementation of the changes proposed by the user. The simulation files are stored in output_files/simulation_files/. In addition, the approach simulates that simulation process model and generates a statistics file corresponding to the stats of the simulated model. The simulation stats are stored in output_files/simulation_stats/.
 
+Output:
 
-## Examples
-The files used for the experimentation are stored in input_files.
+* Synthetic traces → `2.hallucination_logs/<log_name>/`
+* BPMN model (To-Be) → `3.bps_tobe/<log_name>/...`
+* Simulation results → `4.simulation_results/<log_name>/...`
 
+---
 
-## Authors
-* **David Seuqera**
+## 📁 File Definitions
+
+* `0.logs`: Input XES logs.
+* `1.predicton_models`: Model checkpoints and generated traces.
+* `2.input_logs`: Intermediate preprocessed logs.
+* `2.hallucination_logs`: Traces generated using trained models and rules.
+* `3.bps_asis`: Discovered BPMN models from original logs.
+* `3.bps_tobe`: BPMN models generated from hallucinated logs.
+* `4.simulation_results`: Stats from simulations based on the BPMN models.
+
+---
+
+## 🧪 Examples
+
+Check `input_files` for example logs and `rules.ini` for declarative rule formats.
+
+---
+
+## 👤 Authors
+
+* **David Sequera**
 * **Daniel Baron**
 * **Manuel Camargo**
 * **Marlon Dumas**
