@@ -16,7 +16,7 @@ This project enables automated training and generation of business process simul
 
 ## 🧱 Architecture Overview
 
-![Pipeline](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/docs/main/images/Pipeline%202.png)
+![Pipeline](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/blob/main/docs/pipeline/Pipeline.png)
 
 ---
 
