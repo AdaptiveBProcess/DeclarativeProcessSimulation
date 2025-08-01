@@ -2,20 +2,22 @@ name: deep_generator_2
 channels:
   - defaults
 dependencies:
-  - spyder==5.1.5
-  - pandas
-  - lxml
-  - matplotlib
-  - nltk
-  - scikit-learn
-  - ipywidgets
-  - networkx
-  - xmltodict
+  - python=3.9  # ✅ explicitly set a compatible Python version
+  - pip
   - pip:
+    - lxml
+    - matplotlib
+    - nltk
+    - ipywidgets
+    - networkx
+    - xmltodict
+    - pandas
+    - scikit-learn
     - hyperopt
     - jellyfish
     - keras
     - pm4py
-    - tensorflow
+    - tensorflow==2.17.0
     - opyenxes
+    - beautifulsoup4
     - git+http://github.com/Mcamargo85/support_modules.git

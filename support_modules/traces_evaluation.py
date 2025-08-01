@@ -20,39 +20,49 @@ def get_stats_log_traces(traces_gen_path):
     else:
         return [], []
 
-def extract_rules():
+def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     config = configparser.ConfigParser()
-    config.read('GenerativeLSTM/rules.ini')
+    config.read(path)
 
     settings = {}
     settings['path'] = [x.strip() for x in config['RULES']['path'].split('>>')]
     settings['variation'] = config['RULES']['variation'][0] if 'variation' in config.options('RULES') else None
     settings['prop_variation'] = float(config['RULES']['variation'][1:]) if 'variation' in config.options('RULES') else None
-
+    if verbose:
+        print ( "\n", "### Rules path: ", settings['path'] , "###" , "\n")
     if '*' in settings['path']:
         settings['rule'] = 'eventually'
-    elif '^' in settings['path']:
+    elif '^' in config['RULES']['path']:
         settings['rule'] = 'not_allowed'
-    elif '>>' in settings['path'] and '*' not in settings['path'] and '^' not in settings['path']:
+    elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
         settings['rule'] = 'directly'
-    elif '>>' not in settings['path'] and '*' not in settings['path'] and '^' not in settings['path']:
+    elif '>>' not in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
         settings['rule'] = 'required'
 
     settings['path'] = [x.replace('^', '') for x in settings['path'] if x != '*']
 
     return settings
 
+#list_case is the trace genererated by the allucinator
+#ac_index is dictionary with the activity and its index
+#act_paths is the activities flow
+#rule
+## evaluates if a trace comply with a rule
 def evaluate_condition_list(list_case, ac_index, act_paths, rule):
 
     act_paths_idx = [ac_index[x] if x in ac_index.keys() else x for x in act_paths]
     u_tasks = [x for x in list(set(list_case))]
     
+    #create graph from the allucinator trace
     G = nx.DiGraph()
     for task in u_tasks:
         G.add_node(task)
 
     order = [(a, b) for a, b in zip(list_case[:-1], list_case[1:])]
     G.add_edges_from(order)
+    #end 
+
+    #indicates if the trace comply with the rule
     if rule == 'eventually':
         if G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1]):
             conds = nx.has_path(G, act_paths_idx[0], act_paths_idx[1])
@@ -67,6 +77,7 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
 
     return conds
 
+## receives a dataframe and orders
 def evaluate_condition(df_case, ac_index, act_paths, rule):
 
     act_paths_idx = [ac_index[x] if x in ac_index.keys() else x for x in act_paths]

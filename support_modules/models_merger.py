@@ -12,7 +12,7 @@ class MergeModels:
         self.update_branching_probs()
         self.update_tasks()
         self.save_model()
-        self.simulate()
+        self.simulate_docker()
 
     def load_structures(self):
         
@@ -95,15 +95,51 @@ class MergeModels:
 
         self.asis_sim_info.append(new_sequence_flows)
         
-    def simulate(self):
-        args = ['java', '-jar', self.settings['bimp_path'], self.settings['output_path'], '-csv', self.settings['csv_output_path']]
-        result = subprocess.run(args, stdout=subprocess.PIPE, text=True)
-        if result.returncode == 0:
-            print("Simulation was successfully executed")
-        elif result.returncode == 1:
-            execption_output = [result.stdout.split('\n')[i-1] for i in range(len(result.stdout.split('\n'))) if 'BPSimulatorException' in result.stdout.split('\n')[i]]
-            print("Execution failed :", ' '.join(execption_output))
-        
+    # def simulate(self):
+    #     args = ['java', '-jar', self.settings['bimp_path'], self.settings['output_path'], '-csv', self.settings['csv_output_path']]
+    #     result = subprocess.run(args, stdout=subprocess.PIPE, text=True)
+    #     if result.returncode == 0:
+    #         print("Simulation was successfully executed")
+    #     elif result.returncode == 1:
+    #         execption_output = [result.stdout.split('\n')[i-1] for i in range(len(result.stdout.split('\n'))) if 'BPSimulatorException' in result.stdout.split('\n')[i]]
+    #         print("Execution failed :", ' '.join(execption_output))
+
+    def simulate_docker(self):
+        print(" -- Simulating Process with Dockerized Java --")
+
+        # Prepare paths (make sure they use forward slashes)
+        local_path = os.path.abspath(os.getcwd()).replace("\\", "/")
+        bimp_path = self.settings["bimp_path"].replace("\\", "/")
+        output_path = self.settings["output_path"].replace("\\", "/")
+        csv_output_path = self.settings["csv_output_path"].replace("\\", "/")
+
+        # Docker command
+        docker_cmd = [
+            "docker", "run", "--rm",
+            "-v", f"{local_path}:/app",  # mount the local directory into Docker
+            "-w", "/app",                # work inside /app
+            "java8-xvfb",                 # the Docker image name
+            "java", "-jar", bimp_path,   # run the simulator JAR
+            output_path,                 # input BPMN file
+            "-csv", csv_output_path      # output CSV
+        ]
+
+        print("Running Docker Java Simulation...")
+        print("Command:", " ".join(docker_cmd))
+
+        try:
+            result = subprocess.run(docker_cmd, stdout=subprocess.PIPE, text=True)
+            if result.returncode == 0:
+                print("✅ Simulation was successfully executed")
+            elif result.returncode == 1:
+                lines = result.stdout.split('\n')
+                exception_output = [lines[i - 1] for i in range(len(lines)) if 'BPSimulatorException' in lines[i]]
+                print("❌ Execution failed:", ' '.join(exception_output))
+            else:
+                print(f"⚠️ Simulation failed with return code: {result.returncode}")
+        except Exception as e:
+            print(f"❌ Error running simulation: {str(e)}")
+    
 
     def save_model(self):
         # Save the modified BPMN file

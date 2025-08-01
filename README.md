@@ -10,7 +10,7 @@ The code here presented is able to execute different pre- and post-processing me
 ## Architecture
 
 
-![alt text](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/blob/main/images/Pipeline%202.png)
+![alt text](https://github.com/AdaptiveBProcess/DeclarativeProcessSimulation/docs/main/images/Pipeline%202.png)
 
 ## System Requirements
 * Python 3.x
@@ -47,10 +47,10 @@ cd ..
 ```
 ### Prerequisites
 
-To execute this code with the previous Anaconda install in your system, create an environment using the *environment.yml* specification provided in the repository.
+To execute this code with the previous Anaconda install in your system, create an enviroment using the *enviroment.yml* specification provided in the repository.
 ```
 cd GenerativeLSTM
-conda env create -f environment.yml
+conda env create -f enviroment.yml
 conda activate deep_generator
 ```
 

@@ -18,8 +18,10 @@ class StochasticModel:
         self.extract_stochastic_model()
         
     def load_structures(self):
-        self.log = lr.LogReader(self.settings['log_path'], self.settings)
-        self._sm3_miner()
+        #self.log_path = os.path.join('GenerativeLSTM','input_files', 'spmd', 'ConsultaDataMining201618.csv')
+        self.log_path = os.path.join('GenerativeLSTM','input_files', 'spmd', self.settings['file'] + '.csv')
+        self.log = lr.LogReader(self.log_path, self.settings)
+        self._sm3_miner_docker()
         self.bpmn = br.BpmnReader(self.settings['tobe_bpmn_path'])
         self.model = create_process_structure(self.bpmn)
 
@@ -50,6 +52,69 @@ class StochasticModel:
                         'SMD',
                         str(self.settings['epsilon']), str(self.settings['eta']),
                         'false', 'false', 'false',
-                        self.settings['log_path'],
+                        #os.path.join('GenerativeLSTM','input_files', 'spmd', 'ConsultaDataMining201618.xes'),
+                        os.path.join('GenerativeLSTM','input_files', 'spmd', self.settings['file'] + '.xes'),
                         self.settings['tobe_bpmn_path'].replace('.bpmn', '')])
         subprocess.call(args)
+    
+    def _sm3_miner_docker(self, output_path=None):
+        print(" -- Mining Process Structure with Dockerized Java 8 + Xvfb --")
+
+        # Classpath for Java inside the container (Linux-style paths)
+        classpath = (
+            "GenerativeLSTM/external_tools/splitminer3/bpmtk.jar:"
+            "GenerativeLSTM/external_tools/splitminer3/lib/*"
+        )
+
+        # Prepare input and output paths
+        xes_file = os.path.join("GenerativeLSTM", "input_files", "spmd", self.settings["file"] + ".xes").replace("\\", "/")
+        if output_path is None:
+            output_path = self.settings["tobe_bpmn_path"].replace(".bpmn", "").replace("\\", "/")
+
+        # Host path to mount (make sure it's absolute and Docker-friendly)
+        local_path = os.path.abspath(os.getcwd()).replace("\\", "/")
+
+        # Java command to run inside the container
+        java_cmd = (
+            f'Xvfb :99 -screen 0 1024x768x16 & '
+            f'java -cp "{classpath}" '
+            f'au.edu.unimelb.services.ServiceProvider '
+            f'SMD {self.settings["epsilon"]} {self.settings["eta"]} false false false '
+            f'{xes_file} {output_path}'
+        )
+
+        # Final Docker command
+        docker_cmd = [
+            "docker", "run", "--rm",
+            "-v", f"{local_path}:/app",
+            "-w", "/app",
+            "java8-xvfb",
+            "sh", "-c", java_cmd
+        ]
+
+        print("Running Docker Java 8 SplitMiner3 with Xvfb...")
+        print("Command:", " ".join(docker_cmd))
+
+        # Check input file exists
+        host_xes_path = os.path.join(os.getcwd(), xes_file)
+        if not os.path.exists(host_xes_path):
+            print(f"❌ Error: Input file not found: {host_xes_path}")
+            os.makedirs(os.path.dirname(host_xes_path), exist_ok=True)
+            print(f"Please ensure the file exists at {host_xes_path}")
+            return False
+
+        # Optional debugging pause
+        # input("Press Enter to continue (debugging pause)...")
+
+        try:
+            result = subprocess.run(docker_cmd, check=False)
+
+            if result.returncode != 0:
+                print(f"❌ SplitMiner3 execution failed with return code {result.returncode}")
+                return False
+            else:
+                print("✅ SplitMiner3 finished successfully.")
+                return True
+        except Exception as e:
+            print(f"❌ Error executing SplitMiner3: {str(e)}")
+            return False

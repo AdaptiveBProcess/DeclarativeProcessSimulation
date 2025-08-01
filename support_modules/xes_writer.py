@@ -48,7 +48,6 @@ class XesWriter(object):
                 trace.append(event)
             log.append(trace)
             # log.set_info(classifier, info)
-
         # Save log in xes format
         with open(self.output_file, "w") as file:
             XesXmlSerializer().serialize(log, file)
