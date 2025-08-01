@@ -1,0 +1,72 @@
+version: 5
+##########
+# Common #
+##########
+common:
+  train_log_path: ./PurchasingExample.csv.gz
+  log_ids:
+    case: "caseid"
+    activity: "task"
+    resource: "user"
+    start_time: "start_timestamp"  # Assuming the log contains this
+    end_time: "end_timestamp"      # Assuming the log contains this
+  discover_data_attributes: true
+
+#################
+# Preprocessing #
+#################
+preprocessing:
+  enable_time_concurrency_threshold: 0.0
+
+################
+# Control-flow #
+################ss
+control_flow:
+  optimization_metric: two_gram_distance
+  num_iterations: 10
+  num_evaluations_per_iteration: 3
+  gateway_probabilities: discovery
+  mining_algorithm: sm2
+  # Number of concurrent relations between events to be captured
+  epsilon:
+    - 0.05
+    - 0.5
+  # Threshold for filtering the incoming and outgoing edges
+  eta:
+    - 0.2
+    - 0.7
+  # Whether to replace non-trivial OR joins or not
+  replace_or_joins:
+    - true
+    - false
+  # Whether to prioritize parallelism over loops or not
+  prioritize_parallelism:
+    - true
+    - false
+
+##################
+# Resource model #
+##################
+resource_model:
+  optimization_metric: circadian_emd
+  num_iterations: 5
+  num_evaluations_per_iteration: 3
+  discover_prioritization_rules: false
+  discover_batching_rules: false
+  resource_profiles:
+    discovery_type: differentiated
+    granularity: 60
+    confidence:
+      - 0.6
+      - 0.7
+    support:
+      - 0.05
+      - 0.5
+    participation: 0.4
+
+#####################
+# Extraneous delays #
+#####################
+extraneous_activity_delays:
+  discovery_method: eclipse-aware
+  num_iterations: 1
