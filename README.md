@@ -23,9 +23,9 @@ This project enables automated training and generation of business process simul
 ## 🗂️ New Modular Folder Structure
 
 ```
-DeclarativeProcessSimulation/
-├───0.logs/                        # Raw event logs
-│   └───<log_name>/embedded_matix
+data/
+├───0.logs/                        # Raw event logs and rules
+│   └───<log_name>/embedded_matix 
 ├───1.predicton_models/           # Trained models
 │   └───<log_name>/<model_folder>/parameters/traces_generated
 ├───2.hallucination_logs/         # Generated synthetic traces
@@ -82,8 +82,14 @@ conda activate deep_generator
 Create the following folders if not already present:
 
 ```bash
-mkdir -p output_files/simulation_files
-mkdir -p output_files/simulation_stats
+mkdir -p data/0.logs
+mkdir -p data/1.predicton_models
+mkdir -p data/2.hallucination_logs
+mkdir -p data/2.input_logs
+mkdir -p data/3.bps_asis
+mkdir -p data/3.bps_tobe
+mkdir -p data/4.simulation_results
+
 ```
 
 ---
