@@ -40,6 +40,7 @@ cd ..
 Generative LSTM branch
 
 ```
+```
 cd Simod-2.3.1
 git checkout v2.3.1
 cd ..
@@ -53,7 +54,7 @@ cd GenerativeLSTM
 conda env create -f enviroment.yml
 conda activate deep_generator
 ```
-
+In GenerativeLSTM\output_files please create two folders GenerativeLSTM\output_files\simulation_files and GenerativeLSTM\output_files\simulation_stats, this is for the correct creation of the model
 
 Be sure when running this script to be using Conda prompt or to configure conda into another prompt
 
@@ -66,8 +67,9 @@ https://stackoverflow.com/questions/54828713/working-with-anaconda-in-visual-stu
  line 43 on dg_training.py must be modified with the name of the event log, as the other parameters as model_family or opt_methods.
  After this training is done, a folder with this format "YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX" is generated on  this folder GenerativeLSTM\output_files 
  On dg_prediction.py line 140 with
+ 
 ```python  
- "parameters['filename'] = ''"
+ parameters['filename'] = 'example.csv'
 ```
 
 Change the name to the event log previously used on training on dg_prediction.py
@@ -113,7 +115,7 @@ path =  Validar solicitud >> Radicar Solicitud Homologacion
 variation = =1
 ```
 
-On line 159 this parameter must be modified with the folder that was generated after the training.
+On line 159 on dg_prediction.py this parameter must be modified with the folder that was generated after the training.
 
 ```python
 parameters['folder'] = 'YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX'
@@ -131,7 +133,7 @@ The files used for the experimentation are stored in input_files.
 
 
 ## Authors
-
+* **David Seuqera**
 * **Daniel Baron**
 * **Manuel Camargo**
 * **Marlon Dumas**
