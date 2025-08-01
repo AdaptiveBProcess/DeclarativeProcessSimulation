@@ -98,7 +98,7 @@ mkdir -p data/4.simulation_results
 
 ### 1. Place your event log
 
-Put the `.csv` log into:
+Put the `.csv` and `.ini` log into:
 
 ```bash
 0.logs/<log_name>/
@@ -107,7 +107,7 @@ Put the `.csv` log into:
 Modify `dg_training.py` to set the log name and model settings (line \~43):
 
 ```python
-parameters['filename'] = 'your_log_name.csv'
+FILENAME = "your_log_name.csv"
 ```
 
 Run training:
@@ -123,8 +123,7 @@ This will generate a new folder inside `1.predicton_models/<log_name>/`.
 In `dg_prediction.py`, update the folder and filename (lines \~140 and \~159):
 
 ```python
-parameters['filename'] = 'your_log_name.csv'
-parameters['folder'] = 'YYYYMMDD_XXXXXXXX_XXXX_XXXX_XXXX_XXXXXXXXXXX'
+FILENAME = "your_log_name.csv"
 ```
 
 Specify declarative rules in `rules.ini`, such as:
@@ -154,8 +153,8 @@ Output:
 
 * `0.logs`: Input CSV logs.
 * `1.predicton_models`: Model checkpoints and generated traces.
-* `2.input_logs`: Intermediate preprocessed logs.
-* `2.hallucination_logs`: Traces generated using trained models and rules.
+* `2.input_logs`: Intermediate preprocessed logs (here is important to have a `configuration.yaml` ).
+* `2.hallucination_logs`: Traces generated using trained models and rules (here is important to have a `configuration.yaml` ).
 * `3.bps_asis`: Discovered BPMN models from original logs.
 * `3.bps_tobe`: BPMN models generated from hallucinated logs.
 * `4.simulation_results`: Stats from simulations based on the BPMN models.
@@ -164,7 +163,7 @@ Output:
 
 ## 🧪 Examples
 
-Check `input_files` for example logs and `rules.ini` for declarative rule formats.
+Check `docs/example` for examples of logs, `configuration.yaml` and `rules.ini` for declarative rule formats.
 
 ---
 
