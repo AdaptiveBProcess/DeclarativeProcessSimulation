@@ -33,12 +33,9 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     if '*' in settings['path']:
         settings['rule'] = 'eventually'
     elif '^' in config['RULES']['path']:
-    elif '^' in config['RULES']['path']:
         settings['rule'] = 'not_allowed'
     elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
-    elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
         settings['rule'] = 'directly'
-    elif '>>' not in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
     elif '>>' not in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
         settings['rule'] = 'required'
 
@@ -51,17 +48,11 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
 #act_paths is the activities flow
 #rule
 ## evaluates if a trace comply with a rule
-#list_case is the trace genererated by the allucinator
-#ac_index is dictionary with the activity and its index
-#act_paths is the activities flow
-#rule
-## evaluates if a trace comply with a rule
 def evaluate_condition_list(list_case, ac_index, act_paths, rule):
 
     act_paths_idx = [ac_index[x] if x in ac_index.keys() else x for x in act_paths]
     u_tasks = [x for x in list(set(list_case))]
     
-    #create graph from the allucinator trace
     #create graph from the allucinator trace
     G = nx.DiGraph()
     for task in u_tasks:
@@ -69,9 +60,6 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
 
     order = [(a, b) for a, b in zip(list_case[:-1], list_case[1:])]
     G.add_edges_from(order)
-    #end 
-
-    #indicates if the trace comply with the rule
     #end 
 
     #indicates if the trace comply with the rule
@@ -89,7 +77,6 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
 
     return conds
 
-## receives a dataframe and orders
 ## receives a dataframe and orders
 def evaluate_condition(df_case, ac_index, act_paths, rule):
 
