@@ -62,7 +62,7 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
         "-v", f"{input_path}:/usr/src/Simod/resources",
         "-v", f"{output_path}:/usr/src/Simod/outputs",
         # "-w", "/usr/src", 
-        "simod_fixed",
+        "nokal/simod",
         "poetry", "run", "prosimos",
         "start-simulation", "--bpmn_path", "/usr/src/Simod/resources/"+ model_path,
         "--json_path", "/usr/src/Simod/resources/" + resources_path,

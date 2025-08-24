@@ -65,10 +65,6 @@ Checkout specific branches:
 cd GenerativeLSTM 
 git checkout Declarative-Process
 cd ..
-
-cd Simod-2.3.1
-git checkout v2.3.1
-cd ..
 ```
 
 ### Set up the environment
@@ -90,6 +86,15 @@ mkdir -p data/3.bps_asis
 mkdir -p data/3.bps_tobe
 mkdir -p data/4.simulation_results
 
+```
+
+### Set up docker images
+
+
+```bash
+docker pull nokal/simod
+docker build -t java8-xvfb docs/example/java_docker_image
+docker image ls
 ```
 
 ---
