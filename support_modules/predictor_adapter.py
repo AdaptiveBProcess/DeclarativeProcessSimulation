@@ -31,7 +31,7 @@ def run_simod_docker(input_path="data/1.input_logs", output_path="data/2.bps_asi
         "-v", f"{input_path}:/usr/src/Simod/resources",
         "-v", f"{output_path}:/usr/src/Simod/outputs",
         # "-w", "/usr/src",
-        "simod_fixed",
+        "nokal/simod",
         "poetry", "run", "simod",
         "--configuration", config_inside_container
     ]   

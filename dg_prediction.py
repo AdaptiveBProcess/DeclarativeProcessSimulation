@@ -162,13 +162,13 @@ def main(argv):
 
     path_prediction_models = f"data/1.predicton_models/{NAME}"
 
-    call_predict(generate_params(argv,filename=FILENAME, path=path_prediction_models), input_folder=path_prediction_models, output_folder=f"data/2.hallucination_logs/{NAME}", rules_path=rules_path)
+    # call_predict(generate_params(argv,filename=FILENAME, path=path_prediction_models), input_folder=path_prediction_models, output_folder=f"data/2.hallucination_logs/{NAME}", rules_path=rules_path)
 
-    compress_csv_to_gz(f"data/0.logs/{NAME}/{FILENAME}",output_folder=f"data/2.input_logs/{NAME}")
-    compress_csv_to_gz(f"data/2.hallucination_logs/{NAME}/{FILENAME}")
+    # compress_csv_to_gz(f"data/0.logs/{NAME}/{FILENAME}",output_folder=f"data/2.input_logs/{NAME}")
+    # compress_csv_to_gz(f"data/2.hallucination_logs/{NAME}/{FILENAME}")
 
     # Generate the asis model
-    print("Generating the asis model...")
+    # print("Generating the asis model...")
     generate_bps_model(input_folder=f"data/2.input_logs/{NAME}", output_folder=f"data/3.bps_asis/{NAME}", config_file_name=f"configuration_original.yaml")
 
     print("Generating the tobe model...")
