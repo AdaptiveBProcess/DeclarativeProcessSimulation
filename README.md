@@ -27,7 +27,9 @@ This forlder is in the root of the project
 ```
 data/
 ├───0.logs/                        # Raw event logs and rules
-│   └───<log_name>/embedded_matix 
+│   └───<log_name>/embedded_matix
+│   └───<log_name>/<log_name>.csv
+│   └───<log_name>/rule.ini
 ├───1.predicton_models/           # Trained models
 │   └───<log_name>/<model_folder>/parameters/traces_generated
 ├───2.hallucination_logs/         # Generated synthetic traces
