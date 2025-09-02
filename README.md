@@ -22,6 +22,8 @@ This project enables automated training and generation of business process simul
 
 ## 🗂️ New Modular Folder Structure
 
+This forlder is in the root of the project
+
 ```
 data/
 ├───0.logs/                        # Raw event logs and rules
@@ -75,7 +77,7 @@ conda env create -f environment.yml
 conda activate deep_generator
 ```
 
-Create the following folders if not already present:
+Create the following folders if not already present in the root of the project:
 
 ```bash
 mkdir -p data/0.logs
