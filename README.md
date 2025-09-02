@@ -22,10 +22,14 @@ This project enables automated training and generation of business process simul
 
 ## 🗂️ New Modular Folder Structure
 
+This forlder is in the root of the project
+
 ```
 data/
 ├───0.logs/                        # Raw event logs and rules
-│   └───<log_name>/embedded_matix 
+│   └───<log_name>/embedded_matix
+│   └───<log_name>/<log_name>.csv
+│   └───<log_name>/rule.ini
 ├───1.predicton_models/           # Trained models
 │   └───<log_name>/<model_folder>/parameters/traces_generated
 ├───2.hallucination_logs/         # Generated synthetic traces
@@ -75,7 +79,7 @@ conda env create -f environment.yml
 conda activate deep_generator
 ```
 
-Create the following folders if not already present:
+Create the following folders if not already present in the root of the project:
 
 ```bash
 mkdir -p data/0.logs
