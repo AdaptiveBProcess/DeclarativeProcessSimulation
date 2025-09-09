@@ -92,6 +92,12 @@ mkdir -p data/4.simulation_results
 
 ```
 
+Create the log folder :
+
+```bash
+mkdir -p data/0.logs/<log_name>
+```
+
 ### Set up docker images
 
 
@@ -142,6 +148,25 @@ Specify declarative rules in `rules.ini`, such as:
 [RULES]
 path = TaskA >> TaskB
 variation = =1
+```
+
+Add the configuration files :
+
+```bash
+mkdir -p data/0.logs
+mkdir -p data/1.predicton_models
+mkdir -p data/2.hallucination_logs
+mkdir -p data/2.input_logs
+mkdir -p data/3.bps_asis
+mkdir -p data/3.bps_tobe
+mkdir -p data/4.simulation_results
+```
+
+Add configuration.yaml:
+
+```bash
+cp docs/example/configuration.yaml data/2.input_logs/<log_name>/configuration_original.yaml
+cp docs/example/configuration.yaml data/2.hallucination_logs/<log_name>/configuration_generated.yaml
 ```
 
 Run:

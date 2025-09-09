@@ -68,8 +68,8 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
         "--json_path", "/usr/src/Simod/resources/" + resources_path,
         
         "--total_cases", "20",
-        "--log_out_path", "/usr/src/Simod/outputs/" + model_filename.replace(".bpmn", "_promious_log.csv"),
-        "--stat_out_path","/usr/src/Simod/outputs/" + model_filename.replace(".bpmn", "_promious_stats.csv"),
+        "--log_out_path", "/usr/src/Simod/outputs/" + model_filename.replace(".bpmn", "_prosimos_log.csv"),
+        "--stat_out_path","/usr/src/Simod/outputs/" + model_filename.replace(".bpmn", "_prosimos_stats.csv"),
     ]
 
     print("Running Docker command:")
@@ -78,10 +78,10 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
     result = subprocess.run(docker_command, capture_output=True, text=True)
 
     if result.returncode == 0:
-        print("✅ Promius ran successfully.\n")
+        print("✅ Prosimos ran successfully.\n")
         print(result.stdout)
     else:
-        print("❌ Promius failed.\n")
+        print("❌ Prosimos failed.\n")
         print("STDOUT:\n", result.stdout)
         print("STDERR:\n", result.stderr)
         raise RuntimeError("Prosimos execution failed. Check the logs for details.")
