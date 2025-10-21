@@ -132,7 +132,7 @@ def compress_csv_to_gz(csv_file_path, output_folder=None):
 
 def extract_rules(path):
     rules = te.extract_rules(path=path)
-    rules = f"{rules['rule']}__"+"__".join(item.replace(' ', '_') for item in rules['path'])
+    rules = f"{rules['rule']}__"+"__".join(item.replace(' ', '_').replace('|', '') for item in rules['path'])
     return rules
 
 def simulate_bimp(input_path="", output_path="", NAME="", bimp_path="./GenerativeLSTM/external_tools/bimp/qbp-simulator-engine.jar"):

@@ -34,13 +34,16 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
         settings['rule'] = 'eventually'
     elif '^' in config['RULES']['path']:
         settings['rule'] = 'not_allowed'
-    elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
+    elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path'] and '|' not in settings['path']:
         settings['rule'] = 'directly'
     elif '>>' not in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
         settings['rule'] = 'required'
-
+    # nueva regla precedence    
+    elif '>>' in config['RULES']['path'] and '|' in settings['path'] and '*' not in settings['path'] and '^' not in settings['path']: 
+        settings['rule'] = 'precedence'
     settings['path'] = [x.replace('^', '') for x in settings['path'] if x != '*']
-
+    #eliminar elemento "|"
+    settings['path'] = [x for x in settings['path'] if x != '|']
     return settings
 
 #list_case is the trace genererated by the allucinator
@@ -74,7 +77,12 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
         conds = nx.is_simple_path(G, act_paths_idx)
     elif rule == 'required':
         conds = G.has_node(act_paths_idx[0])
-
+    # Agregacion regla Precedence
+    elif rule == 'precedence':
+        if not G.has_node(act_paths_idx[1]):
+            conds = False       
+        else:
+            conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
     return conds
 
 ## receives a dataframe and orders
@@ -111,7 +119,12 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
         conds = nx.is_simple_path(G, act_paths_idx)
     elif rule == 'required':
         conds = G.has_node(act_paths_idx[0])
-
+    # Agregacion regla Precedence
+    elif rule == 'precedence':
+        if not G.has_node(act_paths_idx[1]):
+            conds = False       
+        else:
+            conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
     return conds
 
 class GenerateStats:
