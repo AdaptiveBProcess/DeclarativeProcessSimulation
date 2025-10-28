@@ -41,9 +41,12 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     # nueva regla precedence    
     elif '>>' in config['RULES']['path'] and '|' in settings['path'] and '*' not in settings['path'] and '^' not in settings['path']: 
         settings['rule'] = 'precedence'
+    # nueva regla succession
+    elif '>>' in config['RULES']['path'] and '#' in settings['path'] and '*' not in settings['path'] and '^' not in settings['path']: 
+        settings['rule'] = 'succession'
     settings['path'] = [x.replace('^', '') for x in settings['path'] if x != '*']
-    #eliminar elemento "|"
-    settings['path'] = [x for x in settings['path'] if x != '|']
+    #eliminar elemento "|" y "#"
+    settings['path'] = [x for x in settings['path'] if x not in ['|', '#']]
     return settings
 
 #list_case is the trace genererated by the allucinator
@@ -67,14 +70,17 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
 
     #indicates if the trace comply with the rule
     if rule == 'eventually':
-        if G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1]):
+        if G.has_node(act_paths_idx[0]):
             conds = nx.has_path(G, act_paths_idx[0], act_paths_idx[1])
         else:
             conds = False
     elif rule == 'not_allowed':
         conds = not(G.has_node(act_paths_idx[0]))
     elif rule == 'directly':
-        conds = nx.is_simple_path(G, act_paths_idx)
+        if G.has_node(act_paths_idx[0]):  
+            conds = G.has_edge(act_paths_idx[0],act_paths_idx[1])
+        else:
+            conds = False
     elif rule == 'required':
         conds = G.has_node(act_paths_idx[0])
     # Agregacion regla Precedence
@@ -83,6 +89,15 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
             conds = False       
         else:
             conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
+    # Agregacion regla Succession
+    elif rule == 'succession':
+        if (G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1])):
+            path_a_b = nx.has_path(G, act_paths_idx[0], act_paths_idx[1])
+            path_b_a = nx.has_path(G, act_paths_idx[1], act_paths_idx[0]) 
+            # La regla se cumple si hay A->B Y NO hay B->A
+            conds = path_a_b and not path_b_a              
+        else:
+            conds = False
     return conds
 
 ## receives a dataframe and orders
@@ -92,7 +107,7 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
     df_case['rank'] = df_case.groupby('caseid')['start_timestamp'].rank().astype(int)
     df_case = df_case.sort_values(by='rank')
     u_tasks = [ac_index[x] for x in df_case['task'].drop_duplicates()]
-    
+
     G = nx.DiGraph()
     for task in u_tasks:
         G.add_node(task)
@@ -116,7 +131,10 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
     elif rule == 'not_allowed':
         conds = not(G.has_node(act_paths_idx[0]))
     elif rule == 'directly':
-        conds = nx.is_simple_path(G, act_paths_idx)
+        if G.has_node(act_paths_idx[0]):  
+            conds = G.has_edge(act_paths_idx[0],act_paths_idx[1])
+        else:
+            conds = False
     elif rule == 'required':
         conds = G.has_node(act_paths_idx[0])
     # Agregacion regla Precedence
@@ -125,6 +143,15 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
             conds = False       
         else:
             conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
+    # Agregacion regla Succession
+    elif rule == 'succession':
+        if (G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1])):
+            path_a_b = nx.has_path(G, act_paths_idx[0], act_paths_idx[1])
+            path_b_a = nx.has_path(G, act_paths_idx[1], act_paths_idx[0]) 
+            # La regla se cumple si hay A->B Y NO hay B->A
+            conds = path_a_b and not path_b_a              
+        else:
+            conds = False    
     return conds
 
 class GenerateStats:

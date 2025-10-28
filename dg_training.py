@@ -37,7 +37,7 @@ def parse_args(argv, filename=''):
 
 
 def main(argv):
-    FILENAME = 'Production.csv'
+    FILENAME = 'PurchasingExample.csv'
     NAME = FILENAME.split('.')[0]
     args = parse_args(argv,filename=FILENAME)
 
