@@ -124,7 +124,7 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
 
     G.add_edges_from(order)
     if rule == 'eventually':
-        if G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1]):
+        if G.has_node(act_paths_idx[0]):
             conds = nx.has_path(G, act_paths_idx[0], act_paths_idx[1])
         else:
             conds = False
