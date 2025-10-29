@@ -34,7 +34,7 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
         settings['rule'] = 'eventually'
     elif '^' in config['RULES']['path']:
         settings['rule'] = 'not_allowed'
-    elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path'] and '|' not in settings['path']:
+    elif '>>' in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path'] and '|' not in settings['path'] and '#' not in settings['path']:
         settings['rule'] = 'directly'
     elif '>>' not in config['RULES']['path'] and '*' not in settings['path'] and '^' not in settings['path']:
         settings['rule'] = 'required'
