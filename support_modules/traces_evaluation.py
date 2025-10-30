@@ -85,7 +85,7 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
         conds = G.has_node(act_paths_idx[0])
     # Agregacion regla Precedence
     elif rule == 'precedence':
-        if not G.has_node(act_paths_idx[1]):
+        if ((not G.has_node(act_paths_idx[1])) and (not G.has_node(act_paths_idx[0]))):
             conds = False       
         else:
             conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
