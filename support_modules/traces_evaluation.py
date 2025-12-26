@@ -30,6 +30,8 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     settings['prop_variation'] = float(config['RULES']['variation'][1:]) if 'variation' in config.options('RULES') else None
     if verbose:
         print ( "\n", "### Rules path: ", settings['path'] , "###" , "\n")
+
+    
     if '*' in settings['path']:
         settings['rule'] = 'eventually'
     elif '^' in config['RULES']['path']:

@@ -6,9 +6,11 @@ import sys
 import gzip
 import shutil
 import pandas as pd
+from params.Params import Params
+from pathlib import Path
+from typing import Optional, Union
 
 from support_modules import traces_evaluation as te
-
 
 
 def generate_bps_model(input_folder="log", output_folder="bps", config_file_name="configuration.yaml"):
@@ -38,80 +40,36 @@ def adapt_resources(original_folder, original_filename, generated_folder, genera
         merged_json_path= os.path.join(generated_folder, merged_filename)   
     )
 
-
-def generate_params(argv, filename="", path=""):
-    def map_opt(opt):
-        return {'-h': 'help', '-a': 'activity', '-c': 'folder',
-                '-b': 'model_file', '-v': 'variant', '-r': 'rep'}.get(opt)
-
-    params = {
-        'one_timestamp': False,
-        'include_org_log': False,
-        'read_options': {
-            # 'timeformat': "%Y-%m-%d %H:%M:%S%z",
-            'timeformat': "%Y-%m-%d %H:%M:%S",
-            'column_names': {
-                'Case ID': 'caseid',
-                'Activity': 'task',
-                'lifecycle:transition': 'event_type',
-                'Resource': 'user'
-            },
-            'one_timestamp': False,
-            'filter_d_attrib': False
-        },
-        'filename': filename,
-        # 'input_path': 'GenerativeLSTM/input_files',
-        # 'sm3_path': os.path.join('GenerativeLSTM', 'external_tools', 'splitminer3', 'bpmtk.jar'),
-        # 'bimp_path': os.path.join('GenerativeLSTM', 'external_tools', 'bimp', 'qbp-simulator-engine_with_csv_statistics.jar'),
-        # 'concurrency': 0.0,
-        # 'epsilon': 0.5,
-        # 'eta': 0.7
-    }
-
-    if not argv:
-        name = params['filename'].split('.')[0]
-        params.update({
-            'activity': 'pred_log',
-            'folder': pa.get_latest_output_folder(path),
-            'model_file': name + '.h5',
-            'log_name': name,
-            'is_single_exec': False,
-            'variant': 'Rules Based Random Choice',
-            'rep': 1
-        })
-    else:
-        try:
-            opts, _ = getopt.getopt(argv, "ho:a:f:c:b:v:r:")
-            for opt, arg in opts:
-                key = map_opt(opt)
-                if key:
-                    params[key] = int(arg) if key == 'rep' else arg
-        except getopt.GetoptError:
-            print('Invalid option')
-            sys.exit(2)
-
-    return params
+def pretty_print_params(params, title="Parameters"):
+    print(f"{title}:")
+    for key, value in params.items():
+        print(f"  {key}: {value}")  
 
 
-
-def call_predict(parameters, input_folder="",output_folder="", rules_path=""):
+def call_predict(parameters, input_folder="",output_folder="", rules_path="", root_path=""):
     pa.hallucinate(
         parameters=parameters,
         input_folder=input_folder,
         output_folder=output_folder,
-        rules_path=rules_path
+        rules_path=rules_path,
+        root_path=root_path
     )
 
-def compress_csv_to_gz(csv_file_path, output_folder=None):
+
+
+def compress_csv_to_gz(csv_file_path: Path, output_folder: Optional[Path] = None):
+
     """
     Compress a .csv file to .csv.gz format.
-
+ 
     Parameters:
         csv_file_path (str): Full path to the input CSV file.
         output_folder (str, optional): Directory where the .gz file should be saved.
                                        If None, saves in the same directory as the input file.
     """
-    if not os.path.isfile(csv_file_path) or not csv_file_path.lower().endswith('.csv'):
+    csv_file_path = Path(csv_file_path)
+
+    if not csv_file_path.is_file() or csv_file_path.suffix.lower() != ".csv":
         raise ValueError("Provided file must be a valid .csv file.")
 
     base_name = os.path.basename(csv_file_path)
@@ -135,7 +93,7 @@ def extract_rules(path):
     rules = f"{rules['rule']}__"+"__".join(item.replace(' ', '_') for item in rules['path'])
     return rules
 
-def simulate_bimp(input_path="", output_path="", NAME="", bimp_path="./GenerativeLSTM/external_tools/bimp/qbp-simulator-engine.jar"):
+def simulate_bimp(input_path="", output_path="", NAME="", PATH="", bimp_path="./GenerativeLSTM/external_tools/bimp/qbp-simulator-engine.jar"):
     
     final_input_path = f"{input_path}/{pa.get_latest_output_folder(input_path)}/best_result"
     bpmn_bimp_path = f"{final_input_path}/{NAME}_bimp_version.bpmn"
@@ -143,50 +101,65 @@ def simulate_bimp(input_path="", output_path="", NAME="", bimp_path="./Generativ
     bp.embed_qbp_simulation(
         bpmn_path=f"{final_input_path}/{NAME}.bpmn",
         resources_json_path=f"{final_input_path}/{NAME}_merged.json",
-        bpmn_bimp_path=bpmn_bimp_path)
+        bpmn_bimp_path=bpmn_bimp_path,
+        exclusive=True
+        )
     pa.run_bimp_docker(
         bimp_path=bimp_path,
         bpmn_path=bpmn_bimp_path,
-        csv_path=f"{output_path}/{NAME}_bimp_log.csv"
+        csv_path=f"{output_path}/{NAME}_bimp_log.csv",
+        path=PATH
     )
 
 
 def main(argv):
+    params = Params(
+        root=Path(argv[0]) if argv else Path(),
+        log_filename="PurchasingExample.csv",
+    )
 
-    FILENAME = "PurchasingExample.csv"
-    NAME = FILENAME.split('.')[0]
-    merged_filename = FILENAME.replace(".csv", "_merged.json")
+    r = params.routes
+    sim = params.simulation
 
-    rules_path = f"data/0.logs/{NAME}/rules.ini"
-    rules_name = extract_rules(rules_path)
+    rules_name = extract_rules(r["rules"])
+    pretty_print_params(r, title="Routes Paths")
+    pretty_print_params(sim, title="Simulation Parameters")
 
-    path_prediction_models = f"data/1.predicton_models/{NAME}"
+    call_predict(
+        sim,
+        input_folder=r["models"],
+        output_folder=r["hallucinated"],
+        rules_path=r["rules"],
+        root_path=params.root,
+    )
 
-    call_predict(generate_params(argv,filename=FILENAME, path=path_prediction_models), input_folder=path_prediction_models, output_folder=f"data/2.hallucination_logs/{NAME}", rules_path=rules_path)
+    compress_csv_to_gz(r["log"] / params.log_filename, output_folder=r["input"])
+    compress_csv_to_gz(r["hallucinated"] / params.log_filename)
 
-    compress_csv_to_gz(f"data/0.logs/{NAME}/{FILENAME}",output_folder=f"data/2.input_logs/{NAME}")
-    compress_csv_to_gz(f"data/2.hallucination_logs/{NAME}/{FILENAME}")
+    generate_bps_model(r["input"], r["bps_asis"], "configuration_original.yaml")
+    generate_bps_model(r["hallucinated"], r["bps_tobe"], "configuration_generated.yaml")
 
-    # Generate the asis model
-    # print("Generating the asis model...")
-    generate_bps_model(input_folder=f"data/2.input_logs/{NAME}", output_folder=f"data/3.bps_asis/{NAME}", config_file_name=f"configuration_original.yaml")
+    adapt_resources(
+        original_folder=r["bps_asis"],
+        original_filename=r["bpmn"],
+        generated_folder=r["bps_tobe"],
+        generated_filename=r["bpmn"],
+        merged_filename=r["merged"],
+    )
 
-    print("Generating the tobe model...")
-    # Generate the tobe model
-    generate_bps_model(input_folder=f"data/2.hallucination_logs/{NAME}", output_folder=f"data/3.bps_tobe/{NAME}", config_file_name=f"configuration_generated.yaml")
+    simulate_model(
+        input_path=r["bps_tobe"],
+        output_path=r["simulation"] / rules_name,
+        bpmn_filename=r["bpmn"],
+        resources_filename=r["merged"],
+    )
 
-
-    # Merge resources
-    adapt_resources(original_folder=f"data/3.bps_asis/{NAME}", original_filename=f"{FILENAME.replace('.csv', '.bpmn')}", 
-                    generated_folder=f"data/3.bps_tobe/{NAME}", generated_filename=f"{FILENAME.replace('.csv', '.bpmn')}",
-                    merged_filename= merged_filename)
-    
-
-    # Simulate the model
-    simulate_model(input_path=f"data/3.bps_tobe/{NAME}", output_path=f"data/4.simulation_results/{NAME}/{rules_name}", bpmn_filename=f"{FILENAME.replace('.csv', '.bpmn')}",
-                   resources_filename= merged_filename)
-
-    simulate_bimp(input_path=f"data/3.bps_tobe/{NAME}", output_path=f"data/4.simulation_results/{NAME}/{rules_name}", NAME=NAME)
+    simulate_bimp(
+        input_path=r["bps_tobe"],
+        output_path=r["simulation"] / rules_name,
+        NAME=params.name,
+        PATH=params.root,
+    )
 
 if __name__ == "__main__":
     main(sys.argv[1:])
