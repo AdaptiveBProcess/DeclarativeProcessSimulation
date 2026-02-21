@@ -85,10 +85,10 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
         conds = G.has_node(act_paths_idx[0])
     # Agregacion regla Precedence
     elif rule == 'precedence':
-        if ((not G.has_node(act_paths_idx[1])) and (not G.has_node(act_paths_idx[0]))):
-            conds = False       
+        if ((G.has_node(act_paths_idx[0])) and (G.has_node(act_paths_idx[1]))):
+            conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))       
         else:
-            conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
+            conds = False
     # Agregacion regla Succession
     elif rule == 'succession':
         if (G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1])):
@@ -139,10 +139,10 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
         conds = G.has_node(act_paths_idx[0])
     # Agregacion regla Precedence
     elif rule == 'precedence':
-        if ((not G.has_node(act_paths_idx[1])) and (not G.has_node(act_paths_idx[0]))):
-            conds = False       
+        if ((G.has_node(act_paths_idx[0])) and (G.has_node(act_paths_idx[1]))):
+            conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))       
         else:
-            conds = (act_paths_idx[0] in nx.ancestors(G, act_paths_idx[1]))
+            conds = False
     # Agregacion regla Succession
     elif rule == 'succession':
         if (G.has_node(act_paths_idx[0]) and G.has_node(act_paths_idx[1])):
