@@ -89,11 +89,12 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
 
 # BIMP simulation
 
-def run_bimp_docker(bimp_path, bpmn_path, csv_path):
+def run_bimp_docker(bimp_path, bpmn_path, csv_path, path):
     print(" -- Simulating Process with Dockerized Java --")
 
     # Prepare paths (make sure they use forward slashes)
-    local_path = os.path.abspath(os.getcwd()).replace("\\", "/")
+    raw_path = path if path else os.getcwd()
+    local_path = os.path.abspath(raw_path).replace("\\", "/")
     print(f"Local path: {local_path}")
     # Docker command
     docker_cmd = [
@@ -263,12 +264,11 @@ def adapt_json(
 
 # Prediction 
 
-def hallucinate(parameters, input_folder="",output_folder="", rules_path=""):
+def hallucinate(parameters, input_folder="",output_folder="", rules_path="", root_path=""):
     #Generative model prediction
     # Crete output folder if it doesn't exist
     os.makedirs(output_folder, exist_ok=True)
-    print(parameters)
-    pr.ModelPredictor(parameters,input_folder=input_folder, output_folder=output_folder, rules_path=rules_path)
+    pr.ModelPredictor(parameters,input_folder=input_folder, output_folder=output_folder, rules_path=rules_path, root_path=root_path)
     # Remove unwanted tasks from the log
     log = pd.read_csv(os.path.join(output_folder, parameters['filename']))
     log = log[~log['task'].isin(['Start', 'End', 'start', 'end'])]

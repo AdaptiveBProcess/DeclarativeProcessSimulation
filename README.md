@@ -201,6 +201,14 @@ Check `docs/example` for examples of logs, `configuration.yaml` and `rules.ini` 
 
 ---
 
+
+## ❌ Known Issues
+
+* `BIMP`: BIMP log version is not beeing created. This happends because Promious creates a log for each resource but bimp needs a role (we are trying to cast this business logic)
+
+---
+
+
 ## 👤 Authors
 
 * **David Sequera**

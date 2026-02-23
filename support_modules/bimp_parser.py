@@ -12,7 +12,7 @@ BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 ET.register_namespace('qbp', QBP_NS)
 ET.register_namespace('bpmn', BPMN_NS)
 
-def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path):
+def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path,exclusive=False):
     """
     Embeds QBP simulation information from a JSON file into a BPMN XML file.
 
@@ -20,6 +20,8 @@ def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path):
         bpmn_path (str): Path to the input BPMN file.
         resources_json_path (str): Path to the JSON file containing simulation data.
         bpmn_bimp_path (str): Path where the modified BPMN file will be saved.
+        exclusive (bool): WARNING Due to uncompatiblity issues this parameter only leaves one resource per task
+        this parameter will make the simulation unrealistic.
     """
     try:
         # Parse the existing BPMN file
@@ -147,6 +149,9 @@ def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path):
                 res_ids_node = ET.SubElement(el, f"{{{QBP_NS}}}resourceIds")
                 for res_id in assigned_resource_ids:
                     ET.SubElement(res_ids_node, f"{{{QBP_NS}}}resourceId").text = res_id
+                    if exclusive:
+                        # This line makes bimp runnable although uncompliant with the actual reality
+                        break
 
         # --- 5. Branching probabilities (sequenceFlows) ---
         gw_probs = bimp.get("gateway_branching_probabilities", [])
