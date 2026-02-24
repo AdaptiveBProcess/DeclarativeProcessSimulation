@@ -1,0 +1,1946 @@
+{
+  "name": "Process specification discovered from mi_proceso.xes",
+  "tasks": [
+    "Task E",
+    "Task D",
+    "Task C",
+    "Task B",
+    "Task A",
+    "EVENT 7 END",
+    "EVENT 1 START"
+  ],
+  "constraints": [
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Init",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 1.0,
+      "confidence": 1.0,
+      "coverage": 1.0,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.28466076696165193,
+      "confidence": 1.0,
+      "coverage": 0.28466076696165193,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task C"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.2374631268436578,
+      "confidence": 1.0,
+      "coverage": 0.2374631268436578,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainPrecedence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.20088495575221238,
+      "confidence": 0.8459627329192546,
+      "coverage": 0.2374631268436578,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.2374631268436578,
+      "confidence": 1.0,
+      "coverage": 0.2374631268436578,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.28466076696165193,
+      "confidence": 1.0,
+      "coverage": 0.28466076696165193,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainResponse",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task C"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.2374631268436578,
+      "confidence": 1.0,
+      "coverage": 0.2374631268436578,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.28466076696165193,
+      "confidence": 1.0,
+      "coverage": 0.28466076696165193,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainResponse",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task C"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "End",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 1.0,
+      "confidence": 1.0,
+      "coverage": 1.0,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainResponse",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task C"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.2374631268436578,
+      "confidence": 1.0,
+      "coverage": 0.2374631268436578,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainPrecedence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task D"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "EVENT 1 START"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotPrecedence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "CoExistence",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 1 START"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "EVENT 7 END"
+        ],
+        [
+          "Task B"
+        ]
+      ],
+      "support": 0.3185840707964602,
+      "confidence": 1.0,
+      "coverage": 0.3185840707964602,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotResponse",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "Task A"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.12536873156342182,
+      "confidence": 1.0,
+      "coverage": 0.12536873156342182,
+      "tr_support": 0.7870370370370371,
+      "tr_confidence": 1.0,
+      "tr_coverage": 0.7870370370370371
+    },
+    {
+      "template": "Precedence",
+      "parameters": [
+        [
+          "Task B"
+        ],
+        [
+          "Task E"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainSuccession",
+      "parameters": [
+        [
+          "Task D"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.28466076696165193,
+      "confidence": 1.0,
+      "coverage": 0.28466076696165193,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task E"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "NotChainResponse",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "Task C"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    },
+    {
+      "template": "Response",
+      "parameters": [
+        [
+          "Task A"
+        ],
+        [
+          "EVENT 7 END"
+        ]
+      ],
+      "support": 0.1592920353982301,
+      "confidence": 1.0,
+      "coverage": 0.1592920353982301,
+      "tr_support": 1.0,
+      "tr_confidence": 1.0,
+      "tr_coverage": 1.0
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<log xes.version="1849-2016" xes.features="nested-attributes" xmlns="http://www.xes-standard.org/">
+	<extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext" />
+	<extension name="Lifecycle" prefix="lifecycle" uri="http://www.xes-standard.org/lifecycle.xesext" />
+	<extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext" />
+	<extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext" />
+	<classifier name="Event Name" keys="concept:name" />
+	<classifier name="MXML Legacy Classifier" keys="concept:name lifecycle:transition" />
+	<classifier name="Resource" keys="org:resource" />
+	<string key="origin" value="csv" />
+	<string key="concept:name" value="Proceso Filtrado" />
+	<trace>
+		<string key="concept:name" value="1377" />
+		<string key="variant" value="Variant 5" />
+		<int key="variant-index" value="5" />
+		<string key="creator" value="Fluxicon Disco" />
+		<event>
+			<string key="concept:name" value="Create Purchase Requisition" />
+			<string key="lifecycle:transition" value="start" />
+			<string key="org:resource" value="Nico Ojenbeer" />
+			<date key="time:timestamp" value="2011-07-17T21:07:00+00:00" />
+			<string key="Activity" value="Create Purchase Requisition" />
+			<string key="Resource" value="Nico Ojenbeer" />
+		</event>
+		<event>
+			<string key="concept:name" value="Create Purchase Requisition" />
+			<string key="lifecycle:transition" value="complete" />
+			<string key="org:resource" value="Nico Ojenbeer" />
+			<date key="time:timestamp" value="2011-07-17T21:40:00+00:00" />
+			<string key="Activity" value="Create Purchase Requisition" />
+			<string key="Resource" value="Nico Ojenbeer" />
+		</event>
+		<event>
+			<string key="concept:name" value="Create Request for Quotation" />
+			<string key="lifecycle:transition" value="start" />
+			<string key="org:resource" value="Anne Olwada" />
+			<date key="time:timestamp" value="2011-07-17T22:39:00+00:00" />
+			<string key="Activity" value="Create Request for Quotation" />
+			<string key="Resource" value="Anne Olwada" />
+		</event>
+		<event>
+			<string key="concept:name" value="Create Request for Quotation" />
+			<string key="lifecycle:transition" value="complete" />
+			<string key="org:resource" value="Anne Olwada" />
+			<date key="time:timestamp" value="2011-07-17T22:51:00+00:00" />
+			<string key="Activity" value="Create Request for Quotation" />
+			<string key="Resource" value="Anne Olwada" />
+		</event>
+		<event>
+			<string key="concept:name" value="Analyze Request for Quotation" />
+			<string key="lifecycle:transition" value="start" />
+			<string key="org:resource" value="Francois de Perrier" />
+			<date key="time:timestamp" value="2011-10-14T12:15:00+00:00" />
+			<string key="Activity" value="Analyze Request for Quotation" />
+			<string key="Resource" value="Francois de Perrier" />
+		</event>
+		<event>
+			<string key="concept:name" value="Analyze Request for Quotation" />
+			<string key="lifecycle:transition" value="complete" />
+			<string key="org:resource" value="Francois de Perrier" />
+			<date key="time:timestamp" value="2011-10-14T12:50:00+00:00" />
+			<string key="Activity" value="Analyze Request for Quotation" />
+			<string key="Resource" value="Francois de Perrier" />
+		</event>
+	</trace>
+</log>
