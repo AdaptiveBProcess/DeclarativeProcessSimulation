@@ -889,6 +889,7 @@ if reglas_recomendadas:
     df_reglas = pd.DataFrame(list(reglas_recomendadas), columns=["Reglas_recomendadas"]).sort_values(by="Reglas_recomendadas").head(1)
     regla_a_recomendar =df_reglas["Reglas_recomendadas"].iloc[0]
     print("Regla seleccionada: ",regla_a_recomendar)
-    convertir_declare_to_declarative(regla_a_recomendar)
+    convertir_declare_to_declarative(regla_a_recomendar,ruta_csv + "rules_recommended.init")
 
+# %%
 
