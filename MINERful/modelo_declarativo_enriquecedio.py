@@ -712,10 +712,10 @@ def analizar_diferencia_reglas(df_excelencia, df_deficiencia, etiqueta_a="Mejor 
     #print(f"Reglas recomendadas (exclusivas de {etiqueta_a}): {len(reglas_unicas_excelencia)}")
     
     return reglas_unicas_excelencia
-def convertir_declare_to_declarative(regla_input, nombre_archivo="rules_recommended.init"):
+def convertir_declare_to_declarative(regla_input, nombre_archivo="rules_recommended.ini"):
     """
     Convierte regla Declare a formato de notación declarative.
-    y guarda el resultado en un archivo .init
+    y guarda el resultado en un archivo .ini
     """
     
     # Diccionario de mapeo basado estrictamente en el archivo fuente proporcionado
@@ -753,7 +753,7 @@ def convertir_declare_to_declarative(regla_input, nombre_archivo="rules_recommen
     else:
         path_str = "FUNCION_NO_MAPEADA"
 
-    # 3. Crear estructura final para el archivo .init
+    # 3. Crear estructura final para el archivo .ini
     contenido = (
         "[RULES]\n"
         f"path = {path_str}\n"
@@ -883,13 +883,11 @@ while (iteracion == 0 or len(reglas_recomendadas) > 10) and iteracion < max_iter
     print(f"Reglas restantes tras podado: {len(reglas_recomendadas)}")
 # aplicacion de filtro y descubrimiento de reglas a recomendar
 
-# Seleccion rule recomendada y escritura archivo .init con la notacion de declarative
+# Seleccion rule recomendada y escritura archivo .ini con la notacion de declarative
 if reglas_recomendadas:
     print("\nCantidad de reglas a promover para mejorar el proceso:",len(reglas_recomendadas))
     df_reglas = pd.DataFrame(list(reglas_recomendadas), columns=["Reglas_recomendadas"]).sort_values(by="Reglas_recomendadas").head(1)
     regla_a_recomendar =df_reglas["Reglas_recomendadas"].iloc[0]
     print("Regla seleccionada: ",regla_a_recomendar)
-    convertir_declare_to_declarative(regla_a_recomendar,ruta_csv + "rules_recommended.init")
-
-# %%
+    convertir_declare_to_declarative(regla_a_recomendar,ruta_csv + "rules.ini")
 

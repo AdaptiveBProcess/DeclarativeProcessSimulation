@@ -13,6 +13,7 @@ from typing import Optional, Union
 from support_modules import traces_evaluation as te
 
 
+
 def generate_bps_model(input_folder="log", output_folder="bps", config_file_name="configuration.yaml"):
     input_folder = os.path.abspath(input_folder)
     output_folder = os.path.abspath(output_folder)
