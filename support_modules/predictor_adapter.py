@@ -92,9 +92,12 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
 def run_bimp_docker(bimp_path, bpmn_path, csv_path, path):
     print(" -- Simulating Process with Dockerized Java --")
 
-    # Prepare paths (make sure they use forward slashes)
+    # Prepare paths (make sure they use forward slashes — Docker runs Linux)
     raw_path = path if path else os.getcwd()
     local_path = os.path.abspath(raw_path).replace("\\", "/")
+    bpmn_path  = str(bpmn_path).replace("\\", "/")
+    csv_path   = str(csv_path).replace("\\", "/")
+    bimp_path  = str(bimp_path).replace("\\", "/")
     print(f"Local path: {local_path}")
     # Docker command
     docker_cmd = [
@@ -103,8 +106,8 @@ def run_bimp_docker(bimp_path, bpmn_path, csv_path, path):
         "-w", "/app",                # work inside /app
         "java8-xvfb",                 # the Docker image name
         "java", "-jar", bimp_path,   # run the simulator JAR
-        bpmn_path,                 # input BPMN file
-        "-csv", csv_path      # output CSV
+        bpmn_path,                   # input BPMN file
+        "-csv", csv_path             # output CSV
     ]
 
     print("Running Docker Java Simulation...")

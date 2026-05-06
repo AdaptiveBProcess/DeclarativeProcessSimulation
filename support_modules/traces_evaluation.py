@@ -20,6 +20,7 @@ def get_stats_log_traces(traces_gen_path):
     else:
         return [], []
 
+
 def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     config = configparser.ConfigParser()
     config.read(path)

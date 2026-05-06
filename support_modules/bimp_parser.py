@@ -12,7 +12,24 @@ BPMN_NS = "http://www.omg.org/spec/BPMN/20100524/MODEL"
 ET.register_namespace('qbp', QBP_NS)
 ET.register_namespace('bpmn', BPMN_NS)
 
-def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path,exclusive=False):
+# Map scipy distribution names to BIMP/QBP distribution type names
+_SCIPY_TO_BIMP = {
+    "lognorm":   "LOGNORMAL",
+    "expon":     "EXPONENTIAL",
+    "norm":      "NORMAL",
+    "uniform":   "UNIFORM",
+    "gamma":     "GAMMA",
+    "triang":    "TRIANGULAR",
+    "fix":       "FIXED",
+    "fixed":     "FIXED",
+}
+
+def _bimp_dist_name(scipy_name: str) -> str:
+    """Convert a scipy distribution name to the BIMP/QBP expected name."""
+    key = scipy_name.lower()
+    return _SCIPY_TO_BIMP.get(key, scipy_name.upper())
+
+def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path, exclusive=False, num_instances=100):
     """
     Embeds QBP simulation information from a JSON file into a BPMN XML file.
 
@@ -41,7 +58,7 @@ def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path,exclusiv
         sim_info_attrs = {
             "currency": "EUR", # Default currency
             "id": f"qbp_{uuid.uuid4()}", # Generated ID
-            "processInstances": "0", # Default case count
+            "processInstances": str(num_instances),
             "startDateTime": datetime.datetime.now().isoformat(timespec='microseconds') + "+00:00" # Current time
         }
         sim_info = ET.Element(f"{{{QBP_NS}}}processSimulationInfo", attrib=sim_info_attrs)
@@ -50,7 +67,7 @@ def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path,exclusiv
         arrival = bimp.get("arrival_time_distribution")
         if arrival:
             arrival_attrs = {
-                "type": arrival["distribution_name"].upper() # Ensure uppercase for distribution type
+                "type": _bimp_dist_name(arrival["distribution_name"])
             }
             # Map distribution parameters to arg1, arg2, mean based on common patterns or first available
             params = [p["value"] for p in arrival.get("distribution_params", [])]

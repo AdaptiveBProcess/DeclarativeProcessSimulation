@@ -6,7 +6,7 @@ import support_modules.predictor_adapter as pa
 class Params:
     root: Path
     log_filename: str
-    rep: int = 1
+    rep: int = 10
     variant: str = "Rules Based Random Choice"
 
 
