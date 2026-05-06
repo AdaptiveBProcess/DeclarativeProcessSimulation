@@ -907,148 +907,150 @@ def seleccion_optima_con_tabla(df):
 
     return mejores_trazas, peores_trazas
 
-
-cantidad_reglas=1
-cast_columns_int=["case:concept:name"]
-cast_columns_date=["time:timestamp"]
-#ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\BPI_Challenge_2012"
-#ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\RunningExample"
-ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\PurchasingExample"
-ruta_log_filtrado_mejor='mi_proceso_filtrado_mejor.xes'
-ruta_log_filtrado_peor='mi_proceso_filtrado_peor.xes'
-ruta_modelo_declarativo_mejor="modelo_descubierto_mejor.csv"
-ruta_modelo_declarativo_peor="modelo_descubierto_peor.csv"
-pd.options.mode.chained_assignment = None
-
-
-# carga del log de eventos cuando esta en formato xes
-#log = pm4py.read_xes(ruta_xes, return_dataframe=True)
-#df = pm4py.convert_to_dataframe(log)
-
-# carga cuando es un archivo .csv el log de eventos
-df = cargar_csvs_de_carpeta(ruta_csv)
-
-# transformacion columnas a entero o date
-convertir_int(cast_columns_int,df)
-convertir_date(cast_columns_date,df)
-df['lifecycle:transition'] = df['lifecycle:transition'].str.lower()
-
-df = corregir_lifecycle_incompleto(df)
-
-# --- CONFIGURACIÓN INICIAL ---
-soporte_global = 0.2  # <-- IGUALADO AL SCRIPT SIMPLE
-max_iteraciones = 200
-iteracion = 0
-reglas_recomendadas = set()
-trazas_excluidas = [] 
-
-# obtiene mejores y peores trazas con base a IL y PCE, calculo de una unica vez
-df_analisis_trazas = generar_analisis_por_traza(df)
-df_trabajo = df_analisis_trazas.copy() # Usar copy para evitar warnings
-mejores_trazas, peores_trazas = seleccion_optima_con_tabla(df_trabajo)
+def main():
+    cantidad_reglas=1
+    cast_columns_int=["case:concept:name"]
+    cast_columns_date=["time:timestamp"]
+    #ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\BPI_Challenge_2012"
+    #ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\RunningExample"
+    ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\PurchasingExample"
+    ruta_log_filtrado_mejor='mi_proceso_filtrado_mejor.xes'
+    ruta_log_filtrado_peor='mi_proceso_filtrado_peor.xes'
+    ruta_modelo_declarativo_mejor="modelo_descubierto_mejor.csv"
+    ruta_modelo_declarativo_peor="modelo_descubierto_peor.csv"
+    pd.options.mode.chained_assignment = None
 
 
-# Extraer log y modelo de la mejor traza
+    # carga del log de eventos cuando esta en formato xes
+    #log = pm4py.read_xes(ruta_xes, return_dataframe=True)
+    #df = pm4py.convert_to_dataframe(log)
+
+    # carga cuando es un archivo .csv el log de eventos
+    df = cargar_csvs_de_carpeta(ruta_csv)
+
+    # transformacion columnas a entero o date
+    convertir_int(cast_columns_int,df)
+    convertir_date(cast_columns_date,df)
+    df['lifecycle:transition'] = df['lifecycle:transition'].str.lower()
+
+    df = corregir_lifecycle_incompleto(df)
+
+    # --- CONFIGURACIÓN INICIAL ---
+    soporte_global = 0.2  # <-- IGUALADO AL SCRIPT SIMPLE
+    max_iteraciones = 200
+    iteracion = 0
+    reglas_recomendadas = set()
+    trazas_excluidas = [] 
+
+    # obtiene mejores y peores trazas con base a IL y PCE, calculo de una unica vez
+    df_analisis_trazas = generar_analisis_por_traza(df)
+    df_trabajo = df_analisis_trazas.copy() # Usar copy para evitar warnings
+    mejores_trazas, peores_trazas = seleccion_optima_con_tabla(df_trabajo)
 
 
-# =====================================================================
-# CICLO ITERATIVO CON RESTA GRUPAL
-#
-# En vez de comparar la mejor traza contra cada peor traza una por una,
-# se agrupan N_GRUPO peores trazas, se unen sus reglas (∪) y se hace
-# una sola resta contra las reglas de la mejor traza.
-# Esto reduce el número de comparaciones de (total_peores) a
-# ⌈total_peores / N_GRUPO⌉ por cada mejor traza candidata.
-#
-# Estrategia:
-#   - Bucle externo : recorre mejores_trazas (i=0 → PCE más cercano a 100)
-#   - Bucle interno : recorre grupos de N_GRUPO peores trazas consecutivas
-#   - Resta grupal  : reglas_mejor  −  (∪ reglas de cada peor del grupo)
-#   - Condición OK  : REGLAS_MIN ≤ len(resultado) ≤ REGLAS_MAX
-# =====================================================================
+    # Extraer log y modelo de la mejor traza
 
-REGLAS_MIN = 1
-REGLAS_MAX = 20
-N_GRUPO    = 10   # <-- ajusta cuántas peores trazas se agrupan por comparación
 
-reglas_recomendadas    = set()
-mejor_traza_encontrada = None
-grupo_peores_encontrado = []
-par_encontrado         = False
+    # =====================================================================
+    # CICLO ITERATIVO CON RESTA GRUPAL
+    #
+    # En vez de comparar la mejor traza contra cada peor traza una por una,
+    # se agrupan N_GRUPO peores trazas, se unen sus reglas (∪) y se hace
+    # una sola resta contra las reglas de la mejor traza.
+    # Esto reduce el número de comparaciones de (total_peores) a
+    # ⌈total_peores / N_GRUPO⌉ por cada mejor traza candidata.
+    #
+    # Estrategia:
+    #   - Bucle externo : recorre mejores_trazas (i=0 → PCE más cercano a 100)
+    #   - Bucle interno : recorre grupos de N_GRUPO peores trazas consecutivas
+    #   - Resta grupal  : reglas_mejor  −  (∪ reglas de cada peor del grupo)
+    #   - Condición OK  : REGLAS_MIN ≤ len(resultado) ≤ REGLAS_MAX
+    # =====================================================================
 
-for i in range(len(mejores_trazas)):
-    mejor_traza_id = mejores_trazas['traza'].iloc[i]
-    print(f"\n[Mejor {i}] Traza eficiente: {mejor_traza_id}")
+    REGLAS_MIN = 1
+    REGLAS_MAX = 20
+    N_GRUPO    = 10   # <-- ajusta cuántas peores trazas se agrupan por comparación
 
-    # Modelo declarativo de la mejor traza (se genera una sola vez por i)
-    carga_df_to_format_xes(
-        df[df['case:concept:name'] == mejor_traza_id].copy(),
-        ruta_log_filtrado_mejor
-    )
-    df_mejor_i = procesar_modelo_declarativo(
-        ruta_log_filtrado_mejor, ruta_modelo_declarativo_mejor, soporte_global, "Mejor Caso"
-    )
-    if df_mejor_i is None:
-        print("  → Modelo declarativo vacío, se omite esta traza.")
-        continue
+    reglas_recomendadas    = set()
+    mejor_traza_encontrada = None
+    grupo_peores_encontrado = []
+    par_encontrado         = False
 
-    reglas_mejor = set(df_mejor_i['Constraint'])
+    for i in range(len(mejores_trazas)):
+        mejor_traza_id = mejores_trazas['traza'].iloc[i]
+        print(f"\n[Mejor {i}] Traza eficiente: {mejor_traza_id}")
 
-    # Lista de peores candidatas (se excluye la misma traza)
-    candidatos_peores = [
-        peores_trazas['traza'].iloc[j]
-        for j in range(len(peores_trazas))
-        if peores_trazas['traza'].iloc[j] != mejor_traza_id
-    ]
-
-    # Iterar en grupos de N_GRUPO peores trazas
-    for inicio in range(0, len(candidatos_peores), N_GRUPO):
-        grupo = candidatos_peores[inicio : inicio + N_GRUPO]
-        ids_str = ', '.join(str(x) for x in grupo)
-        print(f"  Grupo peores [{inicio}–{inicio+len(grupo)-1}]: {ids_str}")
-
-        # Modelo declarativo del grupo de peores trazas (una sola llamada a MINERful)
+        # Modelo declarativo de la mejor traza (se genera una sola vez por i)
         carga_df_to_format_xes(
-            df[df['case:concept:name'].isin(grupo)].copy(),
-            ruta_log_filtrado_peor
+            df[df['case:concept:name'] == mejor_traza_id].copy(),
+            ruta_log_filtrado_mejor
         )
-        df_peor_grupo = procesar_modelo_declarativo(
-            ruta_log_filtrado_peor, ruta_modelo_declarativo_peor, soporte_global, "Peor Caso"
+        df_mejor_i = procesar_modelo_declarativo(
+            ruta_log_filtrado_mejor, ruta_modelo_declarativo_mejor, soporte_global, "Mejor Caso"
         )
-        reglas_peores_grupo = set(df_peor_grupo['Constraint']) if df_peor_grupo is not None else set()
+        if df_mejor_i is None:
+            print("  → Modelo declarativo vacío, se omite esta traza.")
+            continue
 
-        # Resta grupal: reglas del mejor ausentes en TODAS las peores del grupo
-        reglas_candidatas = reglas_mejor - reglas_peores_grupo
-        n = len(reglas_candidatas)
-        print(f"    → Reglas tras resta grupal: {n}")
+        reglas_mejor = set(df_mejor_i['Constraint'])
 
-        if REGLAS_MIN <= n <= REGLAS_MAX:
-            reglas_recomendadas     = reglas_candidatas
-            mejor_traza_encontrada  = mejor_traza_id
-            grupo_peores_encontrado = list(grupo)
-            par_encontrado          = True
+        # Lista de peores candidatas (se excluye la misma traza)
+        candidatos_peores = [
+            peores_trazas['traza'].iloc[j]
+            for j in range(len(peores_trazas))
+            if peores_trazas['traza'].iloc[j] != mejor_traza_id
+        ]
+
+        # Iterar en grupos de N_GRUPO peores trazas
+        for inicio in range(0, len(candidatos_peores), N_GRUPO):
+            grupo = candidatos_peores[inicio : inicio + N_GRUPO]
+            ids_str = ', '.join(str(x) for x in grupo)
+            print(f"  Grupo peores [{inicio}–{inicio+len(grupo)-1}]: {ids_str}")
+
+            # Modelo declarativo del grupo de peores trazas (una sola llamada a MINERful)
+            carga_df_to_format_xes(
+                df[df['case:concept:name'].isin(grupo)].copy(),
+                ruta_log_filtrado_peor
+            )
+            df_peor_grupo = procesar_modelo_declarativo(
+                ruta_log_filtrado_peor, ruta_modelo_declarativo_peor, soporte_global, "Peor Caso"
+            )
+            reglas_peores_grupo = set(df_peor_grupo['Constraint']) if df_peor_grupo is not None else set()
+
+            # Resta grupal: reglas del mejor ausentes en TODAS las peores del grupo
+            reglas_candidatas = reglas_mejor - reglas_peores_grupo
+            n = len(reglas_candidatas)
+            print(f"    → Reglas tras resta grupal: {n}")
+
+            if REGLAS_MIN <= n <= REGLAS_MAX:
+                reglas_recomendadas     = reglas_candidatas
+                mejor_traza_encontrada  = mejor_traza_id
+                grupo_peores_encontrado = list(grupo)
+                par_encontrado          = True
+                break
+
+        if par_encontrado:
             break
 
+    # ---- Resultado final ----
     if par_encontrado:
-        break
-
-# ---- Resultado final ----
-if par_encontrado:
-    print(f"\n✓ Resultado encontrado:")
-    print(f"  Mejor traza          : {mejor_traza_encontrada}")
-    print(f"  Grupo de peores      : {grupo_peores_encontrado}")
-    print(f"  Reglas recomendadas ({len(reglas_recomendadas)}): {reglas_recomendadas}")
-else:
-    print(f"\n✗ No se encontró ningún grupo con entre {REGLAS_MIN} y {REGLAS_MAX} reglas.")
+        print(f"\n✓ Resultado encontrado:")
+        print(f"  Mejor traza          : {mejor_traza_encontrada}")
+        print(f"  Grupo de peores      : {grupo_peores_encontrado}")
+        print(f"  Reglas recomendadas ({len(reglas_recomendadas)}): {reglas_recomendadas}")
+    else:
+        print(f"\n✗ No se encontró ningún grupo con entre {REGLAS_MIN} y {REGLAS_MAX} reglas.")
 
 
-if reglas_recomendadas:
-    print("\nCantidad de reglas a promover para mejorar el proceso:",len(reglas_recomendadas))
-    df_reglas = pd.DataFrame(list(reglas_recomendadas), columns=["Reglas_recomendadas"]).sort_values(by="Reglas_recomendadas").head(20)
-    regla_a_recomendar =df_reglas["Reglas_recomendadas"].iloc[0]
-    print("Regla seleccionada: ",regla_a_recomendar)
-    convertir_declare_to_declarative(regla_a_recomendar,ruta_csv )
+    if reglas_recomendadas:
+        print("\nCantidad de reglas a promover para mejorar el proceso:",len(reglas_recomendadas))
+        df_reglas = pd.DataFrame(list(reglas_recomendadas), columns=["Reglas_recomendadas"]).sort_values(by="Reglas_recomendadas").head(20)
+        regla_a_recomendar =df_reglas["Reglas_recomendadas"].iloc[0]
+        print("Regla seleccionada: ",regla_a_recomendar)
+        convertir_declare_to_declarative(regla_a_recomendar,ruta_csv )
 
+if __name__ =="__main__":
+    main()
 
 
 
