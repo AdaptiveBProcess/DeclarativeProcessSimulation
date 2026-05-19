@@ -907,13 +907,101 @@ def seleccion_optima_con_tabla(df):
 
     return mejores_trazas, peores_trazas
 
+
+def generar_modelo_global(df, soporte, ruta_directorio_salida):
+    """
+    Genera el modelo declarativo sobre el log completo, selecciona la regla
+    con mayor support + coverage + confidence (excluyendo Init y End) y la
+    escribe en rules_global.ini en el mismo directorio que rules.ini.
+
+    Args:
+        df (pd.DataFrame): Log de eventos completo ya corregido.
+        soporte (float): Umbral de soporte para MINERful.
+        ruta_directorio_salida (str): Directorio donde se escribirá rules_global.ini
+                                      (mismo que contiene rules.ini).
+    """
+    ruta_xes  = "mi_proceso_global.xes"
+    ruta_csv_minerful = "modelo_descubierto_global.csv"
+
+    # 1. Exportar log completo a XES
+    carga_df_to_format_xes(df.copy(), ruta_xes)
+
+    # 2. Descubrir modelo declarativo sobre el log completo.
+    # Si con el soporte original solo quedan reglas Init/End, se reduce el umbral
+    # progresivamente hasta encontrar reglas con contenido semántico.
+    soportes_fallback = [soporte, 0.1, 0.05, 0.01]
+    df_global = None
+    for sup in soportes_fallback:
+        df_candidato = procesar_modelo_declarativo(ruta_xes, ruta_csv_minerful, sup, "Log Completo")
+        if df_candidato is None or df_candidato.empty:
+            continue
+        df_filtrado = df_candidato[~df_candidato['Constraint'].str.match(r'(?i)^(init|end)\(')].copy()
+        if not df_filtrado.empty:
+            if sup < soporte:
+                print(f"[generar_modelo_global] Soporte reducido a {sup} para obtener reglas no-Init/End.")
+            df_global = df_filtrado
+            break
+
+    if df_global is None or df_global.empty:
+        print("Advertencia: No se encontraron reglas válidas (no Init/End) para el log completo.")
+        return
+
+    # 4. Seleccionar la regla con mayor score combinado
+    df_global['score'] = df_global['Support'] + df_global['Coverage'] + df_global['Confidence']
+    df_global = df_global.sort_values('score', ascending=False).reset_index(drop=True)
+    mejor_regla = df_global['Constraint'].iloc[0]
+    print(f"\nRegla global seleccionada: {mejor_regla}")
+    print(df_global[['Constraint', 'Support', 'Coverage', 'Confidence', 'score']].head(5).to_string(index=False))
+
+    # 5. Convertir a formato declarativo y escribir rules_global.ini
+    mapeo = {
+        "absence": "^{A}",
+        "required": "{A}",
+        "response": "{A} >> * >> {B}",
+        "alternateresponse": "{A} >> {B}",
+        "precedence": "{A} >> | >> {B}",
+        "succession": "{A} >> # >> {B}",
+        "coexistence": "{A} >> + >> {B}",
+        "notchainsuccession": "{A} >> - >> {B}",
+    }
+    match = re.match(r"(\w+)\((.*)\)", mejor_regla)
+    if not match:
+        print("Error: formato de regla no válido.")
+        return
+
+    nombre_funcion = match.group(1).lower()
+    argumentos = [arg.strip() for arg in match.group(2).split(",")]
+    formato = mapeo.get(nombre_funcion)
+    if formato is None:
+        print(f"Error: función '{nombre_funcion}' no mapeada.")
+        return
+
+    if len(argumentos) == 2:
+        path_str = formato.format(A=argumentos[0], B=argumentos[1])
+    elif len(argumentos) == 1:
+        path_str = formato.format(A=argumentos[0], B="")
+    else:
+        path_str = "ERROR_ARGUMENTOS"
+
+    contenido = (
+        "[RULES]\n"
+        f"path = {path_str}\n"
+        "variation = =1"
+    )
+
+    ruta_salida = os.path.join(os.path.normpath(ruta_directorio_salida), "rules_global.ini")
+    with open(ruta_salida, "w", encoding="utf-8") as f:
+        f.write(contenido)
+    print(f"--- Archivo rules_global.ini generado en: {ruta_salida} ---")
+
+
 def main():
     cantidad_reglas=1
     cast_columns_int=["case:concept:name"]
     cast_columns_date=["time:timestamp"]
-    #ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\BPI_Challenge_2012"
+    ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\BPI_Challenge_2012"
     #ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\RunningExample"
-    ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\PurchasingExample"
+    #ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\PurchasingExample"
     ruta_log_filtrado_mejor='mi_proceso_filtrado_mejor.xes'
     ruta_log_filtrado_peor='mi_proceso_filtrado_peor.xes'
     ruta_modelo_declarativo_mejor="modelo_descubierto_mejor.csv"
@@ -935,8 +1023,11 @@ def main():
 
     df = corregir_lifecycle_incompleto(df)
 
-    # --- CONFIGURACIÓN INICIAL ---
+    # --- MODELO DECLARATIVO GLOBAL (log completo) ---
     soporte_global = 0.2  # <-- IGUALADO AL SCRIPT SIMPLE
+    generar_modelo_global(df, soporte_global, ruta_csv)
+
+    # --- CONFIGURACIÓN INICIAL ---
     max_iteraciones = 200
     iteracion = 0
     reglas_recomendadas = set()
@@ -1043,12 +1134,20 @@ def main():
 
 
     if reglas_recomendadas:
+        # Excluir reglas de tipo Init y End (casi siempre dominan el ranking y aportan poco valor diferencial)
+        reglas_recomendadas = {r for r in reglas_recomendadas if not re.match(r'(?i)^(init|end)\(', r)}
         print("\nCantidad de reglas a promover para mejorar el proceso:",len(reglas_recomendadas))
-        df_reglas = pd.DataFrame(list(reglas_recomendadas), columns=["Reglas_recomendadas"]).sort_values(by="Reglas_recomendadas").head(20)
-        regla_a_recomendar =df_reglas["Reglas_recomendadas"].iloc[0]
-        print("Regla seleccionada: ",regla_a_recomendar)
-        convertir_declare_to_declarative(regla_a_recomendar,ruta_csv )
-
+        # Filtrar df_mejor_i para quedarse solo con las reglas recomendadas
+        # y seleccionar la más confiable usando Support + Coverage + Confidence como score
+        df_reglas = df_mejor_i[df_mejor_i['Constraint'].isin(reglas_recomendadas)].copy()
+        df_reglas['score'] = df_reglas['Support'] + df_reglas['Coverage'] + df_reglas['Confidence']
+        df_reglas = df_reglas.sort_values('score', ascending=False).reset_index(drop=True)
+        regla_a_recomendar = df_reglas['Constraint'].iloc[0]
+        print("Regla seleccionada: ", regla_a_recomendar)
+        print(df_reglas[['Constraint', 'Support', 'Coverage', 'Confidence', 'score']].head(20).to_string(index=False))
+        convertir_declare_to_declarative(regla_a_recomendar, ruta_csv)
+        # display(df_mejor_i)
+        # display(df_peor_grupo)
 if __name__ =="__main__":
     main()
 

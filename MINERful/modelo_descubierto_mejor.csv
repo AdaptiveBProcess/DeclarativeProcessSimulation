@@ -1,5 +1,27 @@
 'Constraint';'Template';'Activation';'Target';'Confidence';'Coverage';'Support';'Trace confidence';'Trace coverage';'Trace support';'Trace fitness';'Marked for exclusion';'Below thresholds';'Redudant';'Conflicting'
-'CoExistence(Amend Request for Quotation, Analyze Request for Quotation)';'CoExistence';'[Amend Request for Quotation]';'[Analyze Request for Quotation]';1.000;0.227;0.227;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
-'CoExistence(Analyze Request for Quotation, Amend Request for Quotation)';'CoExistence';'[Analyze Request for Quotation]';'[Amend Request for Quotation]';1.000;0.227;0.227;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
-'Init(Create Purchase Requisition)';'Init';'';'[Create Purchase Requisition]';1.000;1.000;1.000;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
-'End(Pay Invoice)';'End';'';'[Pay Invoice]';1.000;1.000;1.000;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_DECLINED, A_PARTLYSUBMITTED)';'CoExistence';'[A_DECLINED]';'[A_PARTLYSUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(A_DECLINED, A_PARTLYSUBMITTED)';'NotChainSuccession';'[A_DECLINED]';'[A_PARTLYSUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_DECLINED, A_SUBMITTED)';'CoExistence';'[A_DECLINED]';'[A_SUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(A_DECLINED, A_SUBMITTED)';'NotChainSuccession';'[A_DECLINED]';'[A_SUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_DECLINED, W_Afhandelen leads)';'CoExistence';'[A_DECLINED]';'[W_Afhandelen leads]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_PARTLYSUBMITTED, A_DECLINED)';'CoExistence';'[A_PARTLYSUBMITTED]';'[A_DECLINED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(A_PARTLYSUBMITTED, A_DECLINED)';'NotChainSuccession';'[A_PARTLYSUBMITTED]';'[A_DECLINED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_PARTLYSUBMITTED, A_SUBMITTED)';'CoExistence';'[A_PARTLYSUBMITTED]';'[A_SUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(A_PARTLYSUBMITTED, A_SUBMITTED)';'NotChainSuccession';'[A_PARTLYSUBMITTED]';'[A_SUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_PARTLYSUBMITTED, W_Afhandelen leads)';'CoExistence';'[A_PARTLYSUBMITTED]';'[W_Afhandelen leads]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'Init(A_SUBMITTED)';'Init';'';'[A_SUBMITTED]';1.000;1.000;1.000;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_SUBMITTED, A_DECLINED)';'CoExistence';'[A_SUBMITTED]';'[A_DECLINED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(A_SUBMITTED, A_DECLINED)';'NotChainSuccession';'[A_SUBMITTED]';'[A_DECLINED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_SUBMITTED, A_PARTLYSUBMITTED)';'CoExistence';'[A_SUBMITTED]';'[A_PARTLYSUBMITTED]';1.000;0.364;0.364;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(A_SUBMITTED, W_Afhandelen leads)';'CoExistence';'[A_SUBMITTED]';'[W_Afhandelen leads]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(A_SUBMITTED, W_Afhandelen leads)';'NotChainSuccession';'[A_SUBMITTED]';'[W_Afhandelen leads]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'End(W_Afhandelen leads)';'End';'';'[W_Afhandelen leads]';1.000;1.000;1.000;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'Precedence(A_PARTLYSUBMITTED, W_Afhandelen leads)';'Precedence';'[W_Afhandelen leads]';'[A_PARTLYSUBMITTED]';1.000;0.455;0.455;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'Precedence(A_SUBMITTED, W_Afhandelen leads)';'Precedence';'[W_Afhandelen leads]';'[A_SUBMITTED]';1.000;0.455;0.455;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(W_Afhandelen leads, A_DECLINED)';'CoExistence';'[W_Afhandelen leads]';'[A_DECLINED]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(W_Afhandelen leads, A_PARTLYSUBMITTED)';'CoExistence';'[W_Afhandelen leads]';'[A_PARTLYSUBMITTED]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotResponse(W_Afhandelen leads, A_PARTLYSUBMITTED)';'NotResponse';'[W_Afhandelen leads]';'[A_PARTLYSUBMITTED]';1.000;0.455;0.455;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(W_Afhandelen leads, A_PARTLYSUBMITTED)';'NotChainSuccession';'[W_Afhandelen leads]';'[A_PARTLYSUBMITTED]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'CoExistence(W_Afhandelen leads, A_SUBMITTED)';'CoExistence';'[W_Afhandelen leads]';'[A_SUBMITTED]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotResponse(W_Afhandelen leads, A_SUBMITTED)';'NotResponse';'[W_Afhandelen leads]';'[A_SUBMITTED]';1.000;0.455;0.455;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE
+'NotChainSuccession(W_Afhandelen leads, A_SUBMITTED)';'NotChainSuccession';'[W_Afhandelen leads]';'[A_SUBMITTED]';1.000;0.636;0.636;1.000;1.000;1.000;;FALSE;FALSE;FALSE;FALSE

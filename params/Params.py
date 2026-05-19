@@ -1,13 +1,23 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 import support_modules.predictor_adapter as pa
+import pandas as pd
 
 @dataclass
 class Params:
     root: Path
     log_filename: str
-    rep: int = 10
+    rep: int = 1
     variant: str = "Rules Based Random Choice"
+    rules_filename: str = "rules_global.ini"
+    tobe_cases: int = 371
+
+    @property
+    def total_cases(self) -> int:
+        """Número de casos únicos en el log original — usado como total_cases en Prosimos."""
+        log_path = self.routes["log"] / self.log_filename
+        df = pd.read_csv(log_path, usecols=["case:concept:name"])
+        return df["case:concept:name"].nunique()
 
 
     @property
@@ -25,7 +35,7 @@ class Params:
             "bps_asis": base / "3.bps_asis" / self.name,
             "bps_tobe": base / "3.bps_tobe" / self.name,
             "simulation": base / "4.simulation_results" / self.name,
-            "rules": base / "0.logs" / self.name / "rules.ini",
+            "rules": base / "0.logs" / self.name / self.rules_filename,
             "merged": f"{self.name}_merged.json",
             "bpmn": f"{self.name}.bpmn",
         }
@@ -37,7 +47,8 @@ class Params:
             "log_name": self.name,
             "activity": "pred_log",
             "variant": self.variant,
-            "rep": self.rep ,
+            "rep": self.rep,
+            "num_instances": self.total_cases,
             "is_single_exec": False,
             "one_timestamp": False,
             "include_org_log": False,

@@ -177,7 +177,7 @@ def parse_args(argv, filename=''):
 
 
 def main(argv):
-    FILENAME = 'PurchasingExample.csv'
+    FILENAME = 'BPI_Challenge_2012.csv'
     NAME = FILENAME.split('.')[0]
     args = parse_args(argv,filename=FILENAME)
 

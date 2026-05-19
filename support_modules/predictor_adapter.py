@@ -53,7 +53,7 @@ def run_simod_docker(input_path="data/1.input_logs", output_path="data/2.bps_asi
 
 
 
-def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_simulation", model_path="", resources_path=""):
+def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_simulation", model_path="", resources_path="", total_cases=100):
 
     model_filename = os.path.basename(model_path)
 
@@ -61,13 +61,13 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
         "docker", "run", "--rm",
         "-v", f"{input_path}:/usr/src/Simod/resources",
         "-v", f"{output_path}:/usr/src/Simod/outputs",
-        # "-w", "/usr/src", 
+        # "-w", "/usr/src",
         "nokal/simod",
         "poetry", "run", "prosimos",
         "start-simulation", "--bpmn_path", "/usr/src/Simod/resources/"+ model_path,
         "--json_path", "/usr/src/Simod/resources/" + resources_path,
-        
-        "--total_cases", "20",
+
+        "--total_cases", str(total_cases),
         "--log_out_path", "/usr/src/Simod/outputs/" + model_filename.replace(".bpmn", "_prosimos_log.csv"),
         "--stat_out_path","/usr/src/Simod/outputs/" + model_filename.replace(".bpmn", "_prosimos_stats.csv"),
     ]

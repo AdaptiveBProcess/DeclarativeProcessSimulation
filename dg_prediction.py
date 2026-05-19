@@ -44,18 +44,16 @@ def _corregir_lifecycle_incompleto(df: pd.DataFrame) -> pd.DataFrame:
     """
     incompletos = _diagnosticar_lifecycle_incompleto(df)
     if incompletos.empty:
-        return df.copy()
+        return df
 
     lc_upper = df["lifecycle:transition"].str.upper()
+    df_index = pd.MultiIndex.from_arrays([df["case:concept:name"], df["concept:name"]])
     filas_sinteticas = []
 
     sin_complete = incompletos[incompletos["estado"] == "falta_complete"]
     if not sin_complete.empty:
-        claves = set(zip(sin_complete["case:concept:name"], sin_complete["concept:name"]))
-        mask = (
-            df.apply(lambda r: (r["case:concept:name"], r["concept:name"]) in claves, axis=1)
-            & (lc_upper == "START")
-        )
+        claves = pd.MultiIndex.from_arrays([sin_complete["case:concept:name"], sin_complete["concept:name"]])
+        mask = df_index.isin(claves) & (lc_upper == "START")
         ref = (
             df[mask]
             .groupby(["case:concept:name", "concept:name"], group_keys=False)
@@ -66,11 +64,8 @@ def _corregir_lifecycle_incompleto(df: pd.DataFrame) -> pd.DataFrame:
 
     sin_start = incompletos[incompletos["estado"] == "falta_start"]
     if not sin_start.empty:
-        claves = set(zip(sin_start["case:concept:name"], sin_start["concept:name"]))
-        mask = (
-            df.apply(lambda r: (r["case:concept:name"], r["concept:name"]) in claves, axis=1)
-            & (lc_upper == "COMPLETE")
-        )
+        claves = pd.MultiIndex.from_arrays([sin_start["case:concept:name"], sin_start["concept:name"]])
+        mask = df_index.isin(claves) & (lc_upper == "COMPLETE")
         ref = (
             df[mask]
             .groupby(["case:concept:name", "concept:name"], group_keys=False)
@@ -92,18 +87,18 @@ def generate_bps_model(input_folder="log", output_folder="bps", config_file_name
     os.makedirs(output_folder, exist_ok=True)
     pa.run_simod_docker(input_path=input_folder, output_path=output_folder, config_file_name=config_file_name)
 
-def simulate_model(input_path, output_path, bpmn_filename, resources_filename):
+def simulate_model(input_path, output_path, bpmn_filename, resources_filename, total_cases=100):
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
-    # Crete output folder if it doesn't exist
     os.makedirs(output_path, exist_ok=True)
-    bpmn_path = pa.get_latest_output_folder(input_path) + "/best_result/" + bpmn_filename
-    resources_path = pa.get_latest_output_folder(input_path) + "/best_result/" + resources_filename
-    pa.run_prosimos_docker(input_path=input_path, output_path=output_path, model_path=bpmn_path, resources_path=resources_path)
+    latest = pa.get_latest_output_folder(input_path)
+    bpmn_path = latest + "/best_result/" + bpmn_filename
+    resources_path = latest + "/best_result/" + resources_filename
+    pa.run_prosimos_docker(input_path=input_path, output_path=output_path, model_path=bpmn_path, resources_path=resources_path, total_cases=total_cases)
 
 def adapt_resources(original_folder, original_filename, generated_folder, generated_filename, merged_filename):
-    original_folder = os.path.join(original_folder,pa.get_latest_output_folder(original_folder) + "/best_result/")
-    generated_folder = os.path.join(generated_folder,pa.get_latest_output_folder(generated_folder) + "/best_result/")
+    original_folder = os.path.join(original_folder, pa.get_latest_output_folder(original_folder) + "/best_result/")
+    generated_folder = os.path.join(generated_folder, pa.get_latest_output_folder(generated_folder) + "/best_result/")
     pa.adapt_json(
         asis_bpmn_path= os.path.join(original_folder,original_filename),
         asis_json_path= os.path.join(original_folder,original_filename.replace(".bpmn", ".json")),
@@ -164,6 +159,7 @@ def preprocess_xes_log(csv_path: Path, output_folder: Path, filter_sentinels: bo
         # --- Formato ya procesado ---
         df_result = df[['caseid', 'task', 'user', 'start_timestamp', 'end_timestamp']].copy()
         df_result = df_result.sort_values(['caseid', 'start_timestamp']).reset_index(drop=True)
+        del df
         print(f"[preprocess_xes_log] Formato estándar detectado — sin pivot necesario.")
     else:
         # --- Formato XES: pivot lifecycle:transition → start_timestamp / end_timestamp ---
@@ -202,6 +198,7 @@ def preprocess_xes_log(csv_path: Path, output_folder: Path, filter_sentinels: bo
         # astype(str) normaliza IDs numéricos (10913.0 → '10913.0') a string
         df_result['user'] = df_result['user'].fillna('UNKNOWN').astype(str)
         df_result = df_result.sort_values(['caseid', 'start_timestamp']).reset_index(drop=True)
+        del df, df_start, df_end, df_merged
         print(f"[preprocess_xes_log] Formato XES detectado — pivot start/complete aplicado.")
 
     if filter_sentinels:
@@ -259,34 +256,37 @@ def simulate_bimp(input_path="", output_path="", NAME="", PATH="",
 def main(argv):
     params = Params(
         root=Path(argv[0]) if argv else Path(),
-        log_filename="PurchasingExample.csv",
+        log_filename="BPI_Challenge_2012.csv",
     )
 
     r = params.routes
-    sim = params.simulation
+    sim = params.simulation  # num_instances = total_cases del log original
 
     rules_name = extract_rules(r["rules"])
     run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    asis_output = r["simulation"] / f"asis_{run_id}"
+    tobe_output = r["simulation"] / f"{rules_name}_{run_id}"
+
     pretty_print_params(r, title="Routes Paths")
     pretty_print_params(sim, title="Simulation Parameters")
+    print(f"Casos en log original: {params.total_cases} | Trazas a simular (Prosimos): {params.tobe_cases}")
 
-    call_predict(
-        sim,
-        input_folder=r["models"],
+    # --- Fase 1 (secuencial): alucinación y preprocesado uno a la vez ---
+    # call_predict usa multiprocessing interno — no combinar con otros procesos en 8GB RAM.
+    call_predict(sim, r["models"], r["hallucinated"], r["rules"], params.root)
+    preprocess_xes_log(r["log"] / params.log_filename, output_folder=r["input"])
+    preprocess_xes_log(
+        r["hallucinated"] / params.log_filename,
         output_folder=r["hallucinated"],
-        rules_path=r["rules"],
-        root_path=params.root,
+        filter_sentinels=True,
     )
 
-    # Preprocesar log original → data/2.input_logs/{name}/{name}.csv.gz  (original intacto)
-    preprocess_xes_log(r["log"] / params.log_filename, output_folder=r["input"])
-    # Comprimir log alucinado en su misma carpeta, filtrando tokens centinela
-    preprocess_xes_log(r["hallucinated"] / params.log_filename,
-                       output_folder=r["hallucinated"], filter_sentinels=True)
-
+    # --- Fase 2 (secuencial): descubrir modelos BPS para ASIS y TOBE ---
+    # Simod es muy intensivo en memoria — se ejecutan uno tras otro para evitar colapso.
     generate_bps_model(r["input"], r["bps_asis"], "configuration_original.yaml")
     generate_bps_model(r["hallucinated"], r["bps_tobe"], "configuration_generated.yaml")
 
+    # --- Fase 3 (secuencial): adaptar recursos ASIS → TOBE ---
     adapt_resources(
         original_folder=r["bps_asis"],
         original_filename=r["bpmn"],
@@ -295,41 +295,46 @@ def main(argv):
         merged_filename=r["merged"],
     )
 
-    # Simulación ASIS (log original)
-    asis_output = r["simulation"] / f"asis_{run_id}"
-    # Prosimos: genera _prosimos_log.csv + _prosimos_stats.csv (métricas KPIs)
-    simulate_model(
-        input_path=r["bps_asis"],
-        output_path=asis_output,
-        bpmn_filename=r["bpmn"],
-        resources_filename=f"{params.name}.json",   # JSON original de Simod (no el _merged)
-    )
-    # BIMP: genera _bimp_log.csv (log de eventos simulados)
-    simulate_bimp(
-        input_path=r["bps_asis"],
-        output_path=asis_output,
-        NAME=params.name,
-        PATH=params.root,
-        resources_json=f"{params.name}.json",   # JSON original de Simod (no el _merged)
-    )
+    # --- Fase 4 (secuencial): ASIS + 3 réplicas TOBE con timestamps distintos ---
+    # Cada tobe_output usa run_id + N segundos para garantizar nombres únicos.
+    run_id_2 = (datetime.datetime.now() + datetime.timedelta(seconds=1)).strftime("%Y%m%d_%H%M%S")
+    run_id_3 = (datetime.datetime.now() + datetime.timedelta(seconds=2)).strftime("%Y%m%d_%H%M%S")
+    tobe_output_2 = r["simulation"] / f"{rules_name}_{run_id_2}"
+    tobe_output_3 = r["simulation"] / f"{rules_name}_{run_id_3}"
 
-    # Simulación TOBE (log alucinado)
-    tobe_output = r["simulation"] / f"{rules_name}_{run_id}"
-    # Prosimos: genera _prosimos_log.csv + _prosimos_stats.csv (métricas KPIs)
-    simulate_model(
-        input_path=r["bps_tobe"],
-        output_path=tobe_output,
-        bpmn_filename=r["bpmn"],
-        resources_filename=r["merged"],   # JSON adaptado ASIS→TOBE
-    )
-    # BIMP: genera _bimp_log.csv (log de eventos simulados)
-    simulate_bimp(
-        input_path=r["bps_tobe"],
-        output_path=tobe_output,
-        NAME=params.name,
-        PATH=params.root,
-        resources_json=r["merged"],       # JSON adaptado ASIS→TOBE
-    )
+    TOBE_CASES = params.tobe_cases  # número de trazas a simular en Prosimos
+
+    # --- Fase 4 (secuencial): todas las simulaciones una a la vez ---
+    # Con 8GB de RAM, cada JVM Docker corre sola para evitar colapso de memoria.
+    sim_tasks = [
+        ("Prosimos ASIS",      lambda: simulate_model(
+            input_path=r["bps_asis"], output_path=asis_output,
+            bpmn_filename=r["bpmn"], resources_filename=f"{params.name}.json",
+            total_cases=TOBE_CASES,
+        )),
+        ("Prosimos TOBE rep1", lambda: simulate_model(
+            input_path=r["bps_tobe"], output_path=tobe_output,
+            bpmn_filename=r["bpmn"], resources_filename=r["merged"],
+            total_cases=TOBE_CASES,
+        )),
+        ("Prosimos TOBE rep2", lambda: simulate_model(
+            input_path=r["bps_tobe"], output_path=tobe_output_2,
+            bpmn_filename=r["bpmn"], resources_filename=r["merged"],
+            total_cases=TOBE_CASES,
+        )),
+        ("Prosimos TOBE rep3", lambda: simulate_model(
+            input_path=r["bps_tobe"], output_path=tobe_output_3,
+            bpmn_filename=r["bpmn"], resources_filename=r["merged"],
+            total_cases=TOBE_CASES,
+        )),
+    ]
+
+    for name, fn in sim_tasks:
+        try:
+            fn()
+            print(f"✅ {name} completado")
+        except Exception as e:
+            print(f"❌ {name} falló: {e}")
    
 
 if __name__ == "__main__":

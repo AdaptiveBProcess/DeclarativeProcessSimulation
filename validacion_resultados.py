@@ -45,13 +45,13 @@ def analizar_metricas_tobe(file_path):
 
 
 # --- Ejecución ---
-#file_name_asis = r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\RunningExample\salida_asis\RunningExample_prosimos_stats.csv"
+file_name_asis = r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\RunningExample\salida_asis\RunningExample_prosimos_stats.csv"
 #file_name_asis=r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\PurchasingExample\salida_asis\PurchasingExample_prosimos_stats.csv"
-file_name_asis=r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\BPI Challenge 2012\salida-asis\BPI_Challenge_2012_prosimos_stats.csv"
+#file_name_asis=r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\BPI Challenge 2012\salida-asis\BPI_Challenge_2012_prosimos_stats.csv"
 
-#file_name_tobe = r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\RunningExample\salida_to_be\RunningExample_prosimos_stats.csv"
+file_name_tobe = r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\RunningExample\salida_to_be\RunningExample_prosimos_stats.csv"
 #file_name_tobe=r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\PurchasingExample\salida_tobe\PurchasingExample_prosimos_stats.csv"
-file_name_tobe=r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\BPI Challenge 2012\salida-tobe\BPI_Challenge_2012_prosimos_stats.csv"
+#file_name_tobe=r"C:\Users\Diego\Desktop\PRUEBAS-RECOMENDACION-ASISTENCIA\archivos_primera_implementacion\BPI Challenge 2012\salida-tobe\BPI_Challenge_2012_prosimos_stats.csv"
 
 df_final_asis, pce_calculado_asis, il_asis = analizar_metricas_tobe(file_name_asis)
 df_final_tobe, pce_calculado_tobe, il_tobe = analizar_metricas_tobe(file_name_tobe)
