@@ -12,6 +12,7 @@ from pathlib import Path
 from support_modules.predictor_adapter import get_latest_output_folder
 # from get_folder import ReturnFolderName
 from GenerativeLSTM.model_training import model_trainer as tr
+from GenerativeGAN.model_training.gan_trainer import GANTrainer
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -235,9 +236,13 @@ def main(argv):
         shutil.rmtree(emb_folder)
         print(f"[training] Embeddings eliminados para regenerar con vocabulario actual: {emb_folder}")
 
-    # Train the model
+    # Train the model — dispatch to GAN or LSTM trainer based on model family
     os.makedirs(f'data/1.predicton_models/{NAME}', exist_ok=True)
-    tr.ModelTrainer(parameters, input_folder=train_folder, output_folder=f'data/1.predicton_models/{NAME}')
+    output_folder = f'data/1.predicton_models/{NAME}'
+    if model_family == 'simple_gan':
+        GANTrainer(parameters, input_folder=train_folder, output_folder=output_folder)
+    else:
+        tr.ModelTrainer(parameters, input_folder=train_folder, output_folder=output_folder)
     print(get_latest_output_folder("data/1.predicton_models"))
 
 
