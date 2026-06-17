@@ -508,6 +508,11 @@ def generar_analisis_por_traza(df):
     df_final['PCE'] = (df_final['tiempo_procesamiento_x_traza'] / df_final['tiempo_ciclo_x_traza']) * 100
     df_final['PCE'] = df_final['PCE'].replace([np.inf, -np.inf], 0).fillna(0)
 
+
+    # 8. Cálculo de IL y Formateo
+    df_final['IL'] = (df_final['tiempo_espera_x_traza'] / df_final['tiempo_ciclo_x_traza']) * 100
+    df_final['IL'] = df_final['IL'].replace([np.inf, -np.inf], 0).fillna(0)
+
     df_final = df_final.rename(columns={'case:concept:name': 'traza', 'variante_id': 'variante'})
     
     cols_num = [
@@ -521,7 +526,7 @@ def generar_analisis_por_traza(df):
         'traza', 'variante', 'tiempo_ciclo_x_traza', 
         'tiempo_espera_x_traza', 'tiempo_procesamiento_x_traza',
         'tiempo_espera_prom_por_actividad', 'tiempo_proces_prom_por_actividad', 
-        'PCE'
+        'PCE','IL'
     ]
     
     return df_final[orden].sort_values(by='variante')
@@ -589,70 +594,6 @@ def obtener_top_cuellos_botella(df_analisis):
     ]
 
     return top_5_cuellos[columnas_retorno]
-
-def seleccion_optima_con_tabla(df_analisis):
-    """
-    Identifica la pareja óptima de trazas (Mejor vs. Peor) maximizando el contraste.
-
-    Esta función evalúa dos estrategias competitivas para seleccionar los casos de estudio:
-    1. Maximizar el PCE (Mejor Caso) y buscar el peor contraejemplo en una variante distinta.
-    2. Maximizar el IL (Peor Caso) y buscar el mejor contraejemplo en una variante distinta.
-    
-    El objetivo es encontrar la combinación que presente la mayor suma de métricas 
-    extremas (Suma de Contraste), garantizando que las diferencias en el flujo 
-    de proceso sean lo más evidentes posible para el motor de descubrimiento.
-
-    Args:
-        df_analisis (pd.DataFrame): DataFrame con métricas de rendimiento por traza.
-
-    Returns:
-        tuple: (pd.DataFrame con la mejor traza, pd.DataFrame con la peor traza).
-    """
-    df = df_analisis.copy()
-    # Usamos los totales recién calculados
-    df_analisis['PCE'] = (df_analisis['tiempo_procesamiento_x_traza'] / df_analisis['tiempo_ciclo_x_traza']) * 100
-    df_analisis['PCE'] = df_analisis['PCE'].replace([np.inf, -np.inf], 0).fillna(0)
-
-    # Asegurar que el Índice de Latencia esté calculado
-    df['IL'] = (df['tiempo_espera_x_traza'] / df['tiempo_ciclo_x_traza'] * 100).fillna(0)
-
-    # --- OPCIÓN 1: Priorizar Mejor -> Buscar Peor de otra variante ---
-    mejor_op1 = df.sort_values(by="PCE", ascending=False).iloc[0]
-    df_ex_mejor = df[df['variante'] != mejor_op1['variante']]
-    peor_op1 = df_ex_mejor.sort_values(by=['IL', 'tiempo_espera_x_traza'], ascending=False).iloc[0]
-    suma_op1 = mejor_op1['PCE'] + peor_op1['IL']
-
-    # --- OPCIÓN 2: Priorizar Peor -> Buscar Mejor de otra variante ---
-    peor_op2 = df.sort_values(by=['IL', 'tiempo_espera_x_traza'], ascending=False).iloc[0]
-    df_ex_peor = df[df['variante'] != peor_op2['variante']]
-    mejor_op2 = df_ex_peor.sort_values(by="PCE", ascending=False).iloc[0]
-    suma_op2 = mejor_op2['PCE'] + peor_op2['IL']
-
-    # --- Creación de la Tabla Comparativa ---
-    data_tabla = {
-        "Estrategia de Selección": ["1. Priorizar Mejor", "2. Priorizar Peor"],
-        "ID Mejor Traza": [mejor_op1['traza'], mejor_op2['traza']],
-        "PCE (Mejor)": [mejor_op1['PCE'], mejor_op2['PCE']],
-        "ID Peor Traza": [peor_op1['traza'], peor_op2['traza']],
-        "IL (Peor)": [peor_op1['IL'], peor_op2['IL']],
-        "Suma (Contraste)": [suma_op1, suma_op2]
-    }   
-    tabla_decision = pd.DataFrame(data_tabla)
-    
-    # --- Elección de la mejor pareja ---
-    if suma_op1 >= suma_op2:
-        mejor_final = mejor_op1
-        peor_final = peor_op1
-        ganador = "Opción 1"
-    else:
-        mejor_final = mejor_op2
-        peor_final = peor_op2
-        ganador = "Opción 2"
-    #print("### TABLA DE DECISIÓN DE TRAZAS ###")
-    #print(tabla_decision.to_string(index=False))
-    #print(f"\nResultado: Se elige la **{ganador}** por presentar mayor brecha de comportamiento.")
-
-    return pd.DataFrame([mejor_final]), pd.DataFrame([peor_final])
 
 def procesar_modelo_declarativo(ruta_log, ruta_salida, soporte, etiqueta):
     """
@@ -759,10 +700,16 @@ def convertir_declare_to_declarative(regla_input, nombre_archivo="rules_recommen
         f"path = {path_str}\n"
         "variation = =1"
     )
+    
     # 4. Guardar archivo
-    with open(nombre_archivo, "w", encoding="utf-8") as f:
+    ruta=nombre_archivo
+    ruta_limpia = os.path.normpath(ruta)
+    #ruta_limpia = os.path.dirname(ruta)
+    nueva_ruta= os.path.join(ruta_limpia, "")
+    nueva_ruta = nueva_ruta + "rules.ini"
+    with open(nueva_ruta, "w", encoding="utf-8") as f:
         f.write(contenido)   
-    print(f"--- Archivo '{nombre_archivo}' generado ---")
+    print(f"--- Archivo rules.ini generado ---")
     #print(contenido)
 def cargar_csvs_de_carpeta(ruta_carpeta):
     """
@@ -906,97 +853,121 @@ def corregir_lifecycle_incompleto(df: pd.DataFrame) -> pd.DataFrame:
 
 
 
-cantidad_reglas=100
-cast_columns_int=["case:concept:name"]
-cast_columns_date=["time:timestamp"]
-ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\BPI_Challenge_2012"
-ruta_log_filtrado_mejor='mi_proceso_filtrado_mejor.xes'
-ruta_log_filtrado_peor='mi_proceso_filtrado_peor.xes'
-ruta_modelo_declarativo_mejor="modelo_descubierto_mejor.csv"
-ruta_modelo_declarativo_peor="modelo_descubierto_peor.csv"
-pd.options.mode.chained_assignment = None
+def seleccion_optima_con_tabla(df):
+    """
+    Clasifica trazas en dos grupos: las más eficientes (mejores) y las más ineficientes (peores).
 
+    A partir de un DataFrame de análisis por traza, separa y ordena las trazas según dos
+    métricas de rendimiento de proceso:
+    - PCE (Process Cycle Efficiency): mide el porcentaje del tiempo de ciclo que es
+      tiempo de procesamiento real. Un PCE cercano a 100 indica un proceso muy eficiente.
+    - IL (Idle/Inactivity Level): relación entre el tiempo de espera promedio por actividad
+      y el tiempo de ciclo total. Un IL alto indica mucho tiempo improductivo.
 
-# carga del log de eventos cuando esta en formato xes
-#log = pm4py.read_xes(ruta_xes, return_dataframe=True)
-#df = pm4py.convert_to_dataframe(log)
+    Si la columna 'IL' no está presente en el DataFrame de entrada, se calcula automáticamente
+    como: (tiempo_espera_prom_por_actividad / tiempo_ciclo_x_traza) * 100
 
-# carga cuando es un archivo .csv el log de eventos
-df = cargar_csvs_de_carpeta(ruta_csv)
+    Args:
+        df (pd.DataFrame): DataFrame con columnas:
+            - traza: identificador de la ejecución o traza
+            - variante: variante asociada a esa traza
+            - tiempo_ciclo_x_traza: duración total del ciclo de la traza (minutos)
+            - tiempo_espera_x_traza: tiempo de espera total de la traza (minutos)
+            - tiempo_procesamiento_x_traza: tiempo de procesamiento total de la traza (minutos)
+            - tiempo_espera_prom_por_actividad: tiempo de espera promedio por actividad (minutos)
+            - tiempo_proces_prom_por_actividad: tiempo de procesamiento promedio por actividad (minutos)
+            - PCE: Process Cycle Efficiency (porcentaje)
+            - IL (opcional): Idle Level (porcentaje); se calcula si no está presente
 
-# transformacion columnas a entero o date
-convertir_int(cast_columns_int,df)
-convertir_date(cast_columns_date,df)
-df['lifecycle:transition'] = df['lifecycle:transition'].str.lower()
+    Returns:
+        tuple[pd.DataFrame, pd.DataFrame]: Par (mejores_trazas, peores_trazas) donde:
+            - mejores_trazas: trazas ordenadas por PCE descendente (más cercano a 100 primero)
+            - peores_trazas: trazas ordenadas por IL descendente (mayor tiempo improductivo primero)
+            Ambos DataFrames conservan exactamente las mismas columnas que el DataFrame de entrada,
+            incluyendo la columna 'IL' (calculada si no estaba presente).
+    """
+    df_trabajo = df.copy()
 
-df = corregir_lifecycle_incompleto(df)
-# --- CONFIGURACIÓN INICIAL ---
-soporte_global = 0.2  # <-- IGUALADO AL SCRIPT SIMPLE
-max_iteraciones = 200
-iteracion = 0
-reglas_recomendadas = set()
-trazas_excluidas = [] 
-
-df_analisis_trazas = generar_analisis_por_traza(df)
-df_trabajo = df_analisis_trazas.copy() # Usar copy para evitar warnings
-
-print("Iniciando Ciclo de Destilación Iterativa...")
-
-# =====================================================================
-# PASO 1: DEFINIR LA MEJOR TRAZA (FUERA DEL BUCLE - SE HACE UNA VEZ)
-# =====================================================================
-df_top_pca_global, _ = seleccion_optima_con_tabla(df_trabajo)
-mejor_traza_id = df_top_pca_global['traza'].iloc[0]
-print(f"La MEJOR TRAZA absoluta es: {mejor_traza_id}")
-
-# Extraer log y modelo de la mejor traza
-carga_df_to_format_xes(df[df['case:concept:name'] == mejor_traza_id], ruta_log_filtrado_mejor)
-df_mejor = procesar_modelo_declarativo(ruta_log_filtrado_mejor, ruta_modelo_declarativo_mejor, soporte_global, "Mejor Caso")
-
-# =====================================================================
-# PASO 2: BUCLE DE DESTILACIÓN (Solo itera sobre las peores)
-# =====================================================================
-while (iteracion == 0 or len(reglas_recomendadas) > 10) and iteracion < max_iteraciones:
-    iteracion += 1
-    print(f"\n=== ITERACIÓN {iteracion} ===")
     
-    # Filtrar trazas excluidas
-    df_disponible = df_trabajo[~df_trabajo['traza'].isin(trazas_excluidas)].copy()
+    # Mejores trazas: PCE lo más cercano a 100 (orden descendente)
+    mejores_trazas = pd.DataFrame(
+        df_trabajo
+        .assign(_distancia_pce=lambda x: (x['PCE'] - 100).abs())
+        .sort_values(by=['_distancia_pce', 'PCE'], ascending=[True, False])
+        .drop(columns=['_distancia_pce'])
+        .reset_index(drop=True)
+    )
+
+    # Peores trazas: mayor IL primero (más tiempo improductivo)
+    peores_trazas = pd.DataFrame(
+        df_trabajo
+        .sort_values(by='IL', ascending=False)
+        .reset_index(drop=True)
+    )
+
+    return mejores_trazas, peores_trazas
+
+
+def generar_modelo_global(df, soporte=0.9):
+    """
+    Genera el modelo declarativo sobre el log completo, selecciona la regla
+    con mayor support + coverage + confidence (excluyendo Init y End) y la
+    escribe en rules_global.ini en el mismo directorio que rules.ini.
+
+    Args:
+        df (pd.DataFrame): Log de eventos completo ya corregido.
+        soporte (float): Umbral de soporte para MINERful.
+        ruta_directorio_salida (str): Directorio donde se escribirá rules_global.ini
+                                      (mismo que contiene rules.ini).
+    """
+    ruta_xes  = "mi_proceso_global.xes"
+    ruta_csv_minerful = "modelo_descubierto_global.csv"
+
+    # 1. Exportar log completo a XES
+    carga_df_to_format_xes(df.copy(), ruta_xes)
+
+    # 2. Descubrir modelo declarativo sobre el log completo.
+    # Si con el soporte original solo quedan reglas Init/End, se reduce el umbral
+    # progresivamente hasta encontrar reglas con contenido semántico.
+    df_global = None
+    df_candidato = procesar_modelo_declarativo(ruta_xes, ruta_csv_minerful, soporte, "Log Completo")
     
-    if df_disponible.empty:
-        print("Se agotaron las trazas disponibles.")
-        break
+    return df_candidato
 
-    # Solo nos interesa la peor traza actual
-    _, df_top_bti = seleccion_optima_con_tabla(df_disponible)
-    peor_traza_actual = df_top_bti['traza'].iloc[0]
-    trazas_excluidas.append(peor_traza_actual)
-    
-    #print(f"Podando con la Peor Traza actual: {peor_traza_actual}")
 
-    # Generar XES y Modelo SOLO para la peor traza
-    carga_df_to_format_xes(df[df['case:concept:name'] == peor_traza_actual], ruta_log_filtrado_peor)
-    df_peor = procesar_modelo_declarativo(ruta_log_filtrado_peor, ruta_modelo_declarativo_peor, soporte_global, "Peor Caso")
+def main():
 
-    # Resta de Reglas
-    if iteracion == 1:
-        # En la iteración 1, es igual al código simple
-        reglas_recomendadas = analizar_diferencia_reglas(df_mejor, df_peor)
-    else:
-        # En las siguientes iteraciones, podamos
-        reglas_peor_actual = set(df_peor['Constraint'])
-        reglas_recomendadas = reglas_recomendadas - reglas_peor_actual
+    cast_columns_int=["case:concept:name"]
+    cast_columns_date=["time:timestamp"]
+    ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\RunningExample"
+    ruta_csv=r"C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation\data\0.logs\PurchasingExample"
+    pd.options.mode.chained_assignment = None
 
-    print(f"Reglas restantes tras podado: {len(reglas_recomendadas)}")
-# aplicacion de filtro y descubrimiento de reglas a recomendar
 
-# Seleccion rule recomendada y escritura archivo .ini con la notacion de declarative
-if reglas_recomendadas:
-    print("\nCantidad de reglas a promover para mejorar el proceso:",len(reglas_recomendadas))
-    df_reglas = pd.DataFrame(list(reglas_recomendadas), columns=["Reglas_recomendadas"]).sort_values(by="Reglas_recomendadas").head(1)
-    regla_a_recomendar =df_reglas["Reglas_recomendadas"].iloc[0]
-    print("Regla seleccionada: ",regla_a_recomendar)
-    convertir_declare_to_declarative(regla_a_recomendar,ruta_csv + "rules.ini")
+    # carga del log de eventos cuando esta en formato xes
+    #log = pm4py.read_xes(ruta_xes, return_dataframe=True)
+    #df = pm4py.convert_to_dataframe(log)
+
+    # carga cuando es un archivo .csv el log de eventos
+    df = cargar_csvs_de_carpeta(ruta_csv)
+
+
+    # transformacion columnas a entero o date
+    convertir_int(cast_columns_int,df)
+    convertir_date(cast_columns_date,df)
+    df['lifecycle:transition'] = df['lifecycle:transition'].str.lower()
+
+    df = corregir_lifecycle_incompleto(df)
+
+    # --- MODELO DECLARATIVO GLOBAL (log completo) ---
+    soporte_global = 0.9  # <-- IGUALADO AL SCRIPT SIMPLE
+    df_reglas=generar_modelo_global(df, soporte_global)
+    print(df_reglas.head(10))
+if __name__ =="__main__":
+    main()
+
+
+
 
 
 
