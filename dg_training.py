@@ -178,7 +178,7 @@ def parse_args(argv, filename=''):
 
 
 def main(argv):
-    FILENAME = 'BPI_Challenge_2012.csv'
+    FILENAME = 'RunningExample.csv'
     NAME = FILENAME.split('.')[0]
     args = parse_args(argv,filename=FILENAME)
 
@@ -238,8 +238,15 @@ def main(argv):
 
     # Train the model — dispatch to GAN or LSTM trainer based on model family
     os.makedirs(f'data/1.predicton_models/{NAME}', exist_ok=True)
+    os.makedirs(f'data/4.simulation_results/{NAME}/metricas', exist_ok=True)
     output_folder = f'data/1.predicton_models/{NAME}'
     if model_family == 'simple_gan':
+        # 70/10/20 chronological split: train+val → GAN training, test → reference
+        parameters['split_config'] = {
+            'rules_path': f'data/0.logs/{NAME}/rules.ini',
+            'test_save_path': (
+                f'data/4.simulation_results/{NAME}/metricas/test_split.csv'),
+        }
         GANTrainer(parameters, input_folder=train_folder, output_folder=output_folder)
     else:
         tr.ModelTrainer(parameters, input_folder=train_folder, output_folder=output_folder)

@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 import support_modules.predictor_adapter as pa
 import pandas as pd
 
@@ -9,8 +10,9 @@ class Params:
     log_filename: str
     rep: int = 1
     variant: str = "Rules Based Random Choice"
-    rules_filename: str = "rules_global.ini"
+    rules_filename: str = "rules.ini"
     tobe_cases: int = 371
+    hallucination_cases: Optional[int] = None  # None = usa total_cases del log original
 
     @property
     def total_cases(self) -> int:
@@ -48,7 +50,7 @@ class Params:
             "activity": "pred_log",
             "variant": self.variant,
             "rep": self.rep,
-            "num_instances": self.total_cases,
+            "num_instances": self.hallucination_cases if self.hallucination_cases is not None else self.total_cases,
             "is_single_exec": False,
             "one_timestamp": False,
             "include_org_log": False,

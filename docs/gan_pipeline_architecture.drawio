@@ -1,0 +1,254 @@
+<mxfile host="app.diagrams.net" agent="Claude">
+  <diagram name="GAN Architecture Pipeline" id="gan-architecture-pipeline">
+    <mxGraphModel dx="4107" dy="2536" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2600" pageHeight="1900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="leg_box" parent="1" style="swimlane;fontStyle=1;fontSize=10;fillColor=#f5f5f5;strokeColor=#666666;startSize=25;" value="LEYENDA" vertex="1">
+          <mxGeometry height="190" width="530" x="1510" y="-50" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_1" parent="leg_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="Pipeline heredado (LSTM/Simod)" vertex="1">
+          <mxGeometry height="35" width="210" x="20" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_2" parent="leg_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontStyle=1;" value="Modulo GAN - NUEVO" vertex="1">
+          <mxGeometry height="35" width="210" x="20" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_3" parent="leg_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" value="Datos / archivos" vertex="1">
+          <mxGeometry height="35" width="210" x="20" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_4" parent="leg_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="Reglas declarativas" vertex="1">
+          <mxGeometry height="35" width="210" x="290" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_5" parent="leg_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="Salida / resultados" vertex="1">
+          <mxGeometry height="35" width="210" x="290" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_6" parent="leg_box" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="Capas de red neuronal" vertex="1">
+          <mxGeometry height="35" width="210" x="290" y="125" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_bg" parent="1" style="swimlane;fontStyle=1;fontSize=12;fillColor=#e3f2fd;strokeColor=#1e4d78;startSize=32;fontColor=#1e4d78;" value="PIPELINE GENERAL - DeclarativeProcessSimulation con modulo GAN (reemplaza GenerativeLSTM)" vertex="1">
+          <mxGeometry height="320" width="1590" x="-130" y="-100" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_log" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" value="&lt;b&gt;Log Original&lt;/b&gt;&lt;br&gt;PurchasingExample.csv&lt;br&gt;&lt;i&gt;data/0.logs/&lt;/i&gt;" vertex="1">
+          <mxGeometry height="90" width="155" x="20" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_minerful" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="&lt;b&gt;MINERful&lt;/b&gt;&lt;br&gt;Extraccion de reglas&lt;br&gt;declarativas LTL" vertex="1">
+          <mxGeometry height="70" width="155" x="240" y="170" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_rules" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="&lt;b&gt;rules_global.ini&lt;/b&gt;&lt;br&gt;path = A &gt;&gt; - &gt;&gt; B&lt;br&gt;variation = =1" vertex="1">
+          <mxGeometry height="40" width="155" x="460" y="185" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_gantrain" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=10;" value="&lt;b&gt;dg_training.py&lt;/b&gt;&lt;br&gt;-&gt; GANTrainer&lt;br&gt;&lt;font color=&#39;#7d4e00&#39;&gt;&lt;i&gt;NUEVO - reemplaza LSTM&lt;/i&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="70" width="165" x="240" y="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_h5" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="&lt;b&gt;Modelo entrenado&lt;/b&gt;&lt;br&gt;.h5 + model_parameters.json&lt;br&gt;test_log.csv&lt;br&gt;&lt;i&gt;data/1.predicton_models/&lt;/i&gt;" vertex="1">
+          <mxGeometry height="100" width="165" x="470" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_halluc" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="&lt;b&gt;pa.hallucinate()&lt;/b&gt;&lt;br&gt;GANPredictor&lt;br&gt;+ filtro declarativo&lt;br&gt;&lt;font color=&#39;#7d4e00&#39;&gt;&lt;i&gt;NUEVO&lt;/i&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="155" x="680" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_genlog" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="&lt;b&gt;Log Generado&lt;/b&gt;&lt;br&gt;.csv / .xes / .csv.gz&lt;br&gt;&lt;i&gt;data/2.hallucination_logs/&lt;/i&gt;" vertex="1">
+          <mxGeometry height="80" width="155" x="880" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_simod" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="&lt;b&gt;Simod&lt;/b&gt;&lt;br&gt;Mineria de procesos&lt;br&gt;(Docker)" vertex="1">
+          <mxGeometry height="60" width="145" x="1070" y="75" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_bpmn" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="Modelo BPMN&lt;br&gt;+ JSON recursos&lt;br&gt;&lt;i&gt;data/2.bps_asis/&lt;/i&gt;" vertex="1">
+          <mxGeometry height="80" width="145" x="1240" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s1_prosimos" parent="s1_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" value="&lt;b&gt;Prosimos / BIMP&lt;/b&gt;&lt;br&gt;Simulacion de procesos&lt;br&gt;(Docker)" vertex="1">
+          <mxGeometry height="80" width="165" x="1410" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_1" edge="1" parent="s1_bg" source="s1_log" style="edgeStyle=orthogonalEdgeStyle;" target="s1_minerful">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="98" y="205" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e1_2" edge="1" parent="s1_bg" source="s1_minerful" style="edgeStyle=orthogonalEdgeStyle;" target="s1_rules">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_3" edge="1" parent="s1_bg" source="s1_log" style="edgeStyle=orthogonalEdgeStyle;" target="s1_gantrain">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_4" edge="1" parent="s1_bg" source="s1_gantrain" style="edgeStyle=orthogonalEdgeStyle;" target="s1_h5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_5" edge="1" parent="s1_bg" source="s1_h5" style="edgeStyle=orthogonalEdgeStyle;" target="s1_halluc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_6" edge="1" parent="s1_bg" source="s1_rules" style="edgeStyle=orthogonalEdgeStyle;" target="s1_halluc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_7" edge="1" parent="s1_bg" source="s1_halluc" style="edgeStyle=orthogonalEdgeStyle;" target="s1_genlog">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_8" edge="1" parent="s1_bg" source="s1_genlog" style="edgeStyle=orthogonalEdgeStyle;" target="s1_simod">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_9" edge="1" parent="s1_bg" source="s1_simod" style="edgeStyle=orthogonalEdgeStyle;" target="s1_bpmn">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e1_10" edge="1" parent="s1_bg" source="s1_bpmn" style="edgeStyle=orthogonalEdgeStyle;" target="s1_prosimos">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_bg" parent="1" style="swimlane;fontStyle=1;fontSize=11;fillColor=#f3e5f5;strokeColor=#9673a6;startSize=30;fontColor=#4a148c;" value="ARQUITECTURA DE REDES  (model_simple_gan.py + _train_gan - TensorFlow 2.17 / Keras)" vertex="1">
+          <mxGeometry height="620" width="1500" x="-130" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_gen_title" parent="s3_bg" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=11;fontColor=#d6b656;" value="GENERADOR  (build_generator)" vertex="1">
+          <mxGeometry height="22" width="260" x="30" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_noise" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="&lt;b&gt;Input: noise&lt;/b&gt;&lt;br&gt;shape = (latent_dim,)&lt;br&gt;&lt;i&gt;latent_dim = 100&lt;/i&gt;&lt;br&gt;N(0,1) gaussiano" vertex="1">
+          <mxGeometry height="70" width="155" x="30" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_d1" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Dense(256, relu)" vertex="1">
+          <mxGeometry height="38" width="155" x="30" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_d2" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Dense(max_trace x 64, relu)" vertex="1">
+          <mxGeometry height="38" width="155" x="30" y="208" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_reshape" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" value="Reshape(max_trace_size, 64)&lt;br&gt;&lt;i&gt;proyecta a secuencia temporal&lt;/i&gt;" vertex="1">
+          <mxGeometry height="45" width="155" x="30" y="261" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_gru1" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontStyle=1;fontSize=10;" value="&lt;b&gt;GRU(128)&lt;/b&gt;&lt;br&gt;return_sequences=True" vertex="1">
+          <mxGeometry height="45" width="155" x="30" y="321" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_gru2" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d6b656;fontStyle=1;fontSize=10;" value="&lt;b&gt;GRU(64)&lt;/b&gt;&lt;br&gt;return_sequences=True" vertex="1">
+          <mxGeometry height="45" width="155" x="30" y="381" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_ac" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="TimeDistributed&lt;br&gt;&lt;b&gt;Dense(n_ac, softmax)&lt;/b&gt;&lt;br&gt;-&gt; prob actividad" vertex="1">
+          <mxGeometry height="60" width="145" x="10" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_rl" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="TimeDistributed&lt;br&gt;&lt;b&gt;Dense(n_rl, softmax)&lt;/b&gt;&lt;br&gt;-&gt; prob rol" vertex="1">
+          <mxGeometry height="60" width="145" x="168" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_tm" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" value="TimeDistributed&lt;br&gt;&lt;b&gt;Dense(2, sigmoid)&lt;/b&gt;&lt;br&gt;-&gt; [dur_norm, wait_norm]" vertex="1">
+          <mxGeometry height="60" width="145" x="326" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_g_concat" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=10;" value="&lt;b&gt;Concatenate&lt;/b&gt;&lt;br&gt;Output: (max_trace, n_ac + n_rl + 2)" vertex="1">
+          <mxGeometry height="50" width="145" x="168" y="567" as="geometry" />
+        </mxCell>
+        <mxCell id="eg1" edge="1" parent="s3_bg" source="s3_g_noise" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_d1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg2" edge="1" parent="s3_bg" source="s3_g_d1" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_d2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg3" edge="1" parent="s3_bg" source="s3_g_d2" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_reshape">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg4" edge="1" parent="s3_bg" source="s3_g_reshape" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_gru1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg5" edge="1" parent="s3_bg" source="s3_g_gru1" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_gru2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg6" edge="1" parent="s3_bg" source="s3_g_gru2" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_ac">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg7" edge="1" parent="s3_bg" source="s3_g_gru2" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_rl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg8" edge="1" parent="s3_bg" source="s3_g_gru2" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_tm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg9" edge="1" parent="s3_bg" style="edgeStyle=orthogonalEdgeStyle;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="155" y="530" />
+              <mxPoint x="240" y="530" />
+            </Array>
+            <mxPoint x="155.00000000000045" y="489.9965217391305" as="sourcePoint" />
+            <mxPoint x="240.47826086956593" y="577.04" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="eg10" edge="1" parent="s3_bg" source="s3_g_rl" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_concat">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eg11" edge="1" parent="s3_bg" source="s3_g_tm" style="edgeStyle=orthogonalEdgeStyle;" target="s3_g_concat">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="398" y="530" />
+              <mxPoint x="240" y="530" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="s3_disc_title" parent="s3_bg" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=11;fontColor=#9673a6;" value="DISCRIMINADOR  (build_discriminator)" vertex="1">
+          <mxGeometry height="22" width="270" x="560" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_d_in" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="&lt;b&gt;Input: trace&lt;/b&gt;&lt;br&gt;shape = (max_trace, n_ac + n_rl + 2)&lt;br&gt;&lt;i&gt;trazas reales O generadas&lt;/i&gt;" vertex="1">
+          <mxGeometry height="70" width="200" x="580" y="65" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_d_gru1" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=10;" value="&lt;b&gt;GRU(128)&lt;/b&gt;&lt;br&gt;return_sequences=True" vertex="1">
+          <mxGeometry height="45" width="200" x="580" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_d_gru2" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=10;" value="&lt;b&gt;GRU(64)&lt;/b&gt;" vertex="1">
+          <mxGeometry height="38" width="200" x="580" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_d_dense" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" value="Dense(64, relu)" vertex="1">
+          <mxGeometry height="38" width="200" x="580" y="268" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_d_out" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=10;" value="&lt;b&gt;Dense(1, sigmoid)&lt;/b&gt;&lt;br&gt;&lt;b&gt;-&gt; validity en [0,1]&lt;/b&gt;&lt;br&gt;&lt;i&gt;0 = falsa  /  1 = real&lt;/i&gt;" vertex="1">
+          <mxGeometry height="55" width="200" x="580" y="321" as="geometry" />
+        </mxCell>
+        <mxCell id="ed1" edge="1" parent="s3_bg" source="s3_d_in" style="edgeStyle=orthogonalEdgeStyle;" target="s3_d_gru1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ed2" edge="1" parent="s3_bg" source="s3_d_gru1" style="edgeStyle=orthogonalEdgeStyle;" target="s3_d_gru2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ed3" edge="1" parent="s3_bg" source="s3_d_gru2" style="edgeStyle=orthogonalEdgeStyle;" target="s3_d_dense">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ed4" edge="1" parent="s3_bg" source="s3_d_dense" style="edgeStyle=orthogonalEdgeStyle;" target="s3_d_out">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_loop_title" parent="s3_bg" style="text;html=1;strokeColor=none;fillColor=none;align=center;fontStyle=1;fontSize=11;fontColor=#b85450;" value="LOOP DE ENTRENAMIENTO  (_train_gan - gan_trainer.py:135-175)" vertex="1">
+          <mxGeometry height="22" width="440" x="880" y="35" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_combined" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#b85450;fontSize=10;" value="&lt;b&gt;Modelo Combined&lt;/b&gt;&lt;br&gt;noise -&gt; G(noise) -&gt; D(frozen) -&gt; validity&lt;br&gt;&lt;i&gt;optimizer = g_opt (Adam)&lt;br&gt;loss = binary_crossentropy&lt;/i&gt;" vertex="1">
+          <mxGeometry height="75" width="265" x="900" y="62" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_epoch" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;fontSize=10;" value="&lt;b&gt;for epoch in range(epochs=200):&lt;/b&gt;" vertex="1">
+          <mxGeometry height="38" width="265" x="900" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_paso1" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;align=left;fontSize=10;" value="&lt;b&gt;PASO 1 - Discriminador&lt;/b&gt;&lt;br&gt;&lt;br&gt;1. Toma half_batch trazas reales de X&lt;br&gt;2. Genera fake_traces = G(noise)&lt;br&gt;&lt;br&gt;D.train_on_batch(real_traces, &lt;b&gt;0.9&lt;/b&gt;)&lt;br&gt;&lt;i&gt;  (label smoothing, no 1.0)&lt;/i&gt;&lt;br&gt;D.train_on_batch(fake_traces, &lt;b&gt;0.0&lt;/b&gt;)&lt;br&gt;&lt;br&gt;d_loss = 0.5 x (d_real + d_fake)" vertex="1">
+          <mxGeometry height="165" width="265" x="900" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_paso2" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;fontSize=10;" value="&lt;b&gt;PASO 2 - Generador&lt;/b&gt;&lt;br&gt;&lt;br&gt;D.trainable = &lt;b&gt;False&lt;/b&gt;&lt;br&gt;&lt;br&gt;combined.train_on_batch(&lt;br&gt;  noise, target=&lt;b&gt;1.0&lt;/b&gt;)&lt;br&gt;&lt;i&gt;  (quiero que D diga real)&lt;/i&gt;&lt;br&gt;&lt;br&gt;gradiente -&gt; solo hacia G&lt;br&gt;D.trainable = &lt;b&gt;True&lt;/b&gt;" vertex="1">
+          <mxGeometry height="160" width="265" x="900" y="392" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_log" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" value="if epoch % 20 == 0:&lt;br&gt;  print(D_loss, G_loss)" vertex="1">
+          <mxGeometry height="38" width="265" x="900" y="567" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_optim" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" value="&lt;b&gt;Optimizadores (Adam)&lt;/b&gt;&lt;br&gt;&lt;br&gt;d_opt: lr=0.0002, beta1=0.5 -&gt; D&lt;br&gt;g_opt: lr=0.0002, beta1=0.5 -&gt; G&lt;br&gt;&lt;br&gt;&lt;i&gt;beta1=0.5 (vs default 0.9)&lt;br&gt;reduce inercia en GANs&lt;/i&gt;" vertex="1">
+          <mxGeometry height="120" width="215" x="1240" y="62" as="geometry" />
+        </mxCell>
+        <mxCell id="s3_hparams" parent="s3_bg" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8eaf6;strokeColor=#3f51b5;fontSize=10;align=left;" value="&lt;b&gt;Hiperparametros configurables&lt;/b&gt;&lt;br&gt;&lt;br&gt;epochs = 200&lt;br&gt;batch_size = 32&lt;br&gt;latent_dim = 100&lt;br&gt;norm_method = max&lt;br&gt;learning_rate = 0.0002&lt;br&gt;beta_1 = 0.5&lt;br&gt;label_smoothing = 0.9&lt;br&gt;train_split = 0.80&lt;br&gt;GRU units: 128 -&gt; 64&lt;br&gt;Dense: 256 (G) / 64 (D)" vertex="1">
+          <mxGeometry height="240" width="215" x="1240" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="el1" edge="1" parent="s3_bg" source="s3_combined" style="edgeStyle=orthogonalEdgeStyle;" target="s3_epoch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="el2" edge="1" parent="s3_bg" source="s3_epoch" style="edgeStyle=orthogonalEdgeStyle;" target="s3_paso1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="el3" edge="1" parent="s3_bg" source="s3_paso1" style="edgeStyle=orthogonalEdgeStyle;" target="s3_paso2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="el4" edge="1" parent="s3_bg" source="s3_paso2" style="edgeStyle=orthogonalEdgeStyle;" target="s3_log">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="el5" edge="1" parent="s3_bg" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;strokeColor=#9673a6;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="s3_d_in" value="construye">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="185" y="140.44" as="sourcePoint" />
+            <mxPoint x="900" y="139.99555555555543" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="el6" edge="1" parent="s3_bg" source="s3_d_in" style="edgeStyle=orthogonalEdgeStyle;dashed=1;fontSize=9;strokeColor=#9673a6;" target="s3_combined" value="construye">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

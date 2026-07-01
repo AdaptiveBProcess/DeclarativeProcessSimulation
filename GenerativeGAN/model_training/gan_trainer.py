@@ -11,6 +11,7 @@ from GenerativeLSTM.model_training.features_manager import FeaturesMannager
 from GenerativeGAN.model_training.models.model_simple_gan import (
     build_generator, build_discriminator)
 from GenerativeGAN.model_training.samples_creator import GANSamplesCreator
+from support_modules import traces_evaluation as te
 
 
 class GANTrainer:
@@ -46,8 +47,18 @@ class GANTrainer:
         # ── 2. Build activity / role indexes ─────────────────────────────────
         self._build_indexes()
 
-        # ── 3. Time-split into train / test ───────────────────────────────────
-        self._split_timeline(0.8, params['read_options']['one_timestamp'])
+        # ── 3. Time-split into train / (val) / test ──────────────────────────
+        split_config = params.get('split_config')
+        if split_config:
+            self._split_timeline_70_10_20(
+                split_config.get('rules_path', ''),
+                split_config.get('test_save_path'))
+        else:
+            self._split_timeline(0.8, params['read_options']['one_timestamp'])
+            self.n_test_cases    = None
+            self.train_prop      = None
+            self.pos_train_cases = None
+            self.n_train_cases   = None
 
         # ── 4. Add dur / wait features to training split ──────────────────────
         fm = FeaturesMannager({
@@ -132,6 +143,56 @@ class GANTrainer:
         self.log_test = (pd.DataFrame(test)
                          .sort_values(key).reset_index(drop=True))
 
+    def _split_timeline_70_10_20(self, rules_path, test_save_path=None):
+        """Chronological 70/10/20 split. Rule proportion calculated on train."""
+        case_order = (
+            self.log.groupby('caseid')['start_timestamp']
+            .min()
+            .sort_values()
+        )
+        n       = len(case_order)
+        n_train = int(n * 0.70)
+        n_val   = int(n * 0.10)
+
+        train_ids = set(case_order.index[:n_train])
+        val_ids   = set(case_order.index[n_train:n_train + n_val])
+        test_ids  = set(case_order.index[n_train + n_val:])
+
+        self.log_train = self.log[self.log['caseid'].isin(train_ids)].copy()
+        self.log_val   = self.log[self.log['caseid'].isin(val_ids)].copy()
+        self.log_test  = self.log[self.log['caseid'].isin(test_ids)].copy()
+
+        # Rule satisfaction proportion in training set
+        rules     = te.extract_rules(path=rules_path)
+        act_paths = rules['path']
+        rule_type = rules['rule']
+
+        def _satisfies(grp):
+            tasks = set(grp['task'].values)
+            if rule_type == 'not_allowed':
+                return act_paths[0] not in tasks
+            elif rule_type == 'required':
+                return act_paths[0] in tasks
+            else:
+                return all(a in tasks for a in act_paths)
+
+        flags = self.log_train.groupby('caseid').apply(_satisfies)
+        self.pos_train_cases = int(flags.sum())
+        self.n_train_cases   = int(len(flags))
+        self.train_prop      = float(flags.mean())
+        self.n_test_cases    = len(test_ids)
+
+        print(f'[GANTrainer] Split 70/10/20: {n_train} train | '
+              f'{len(val_ids)} val | {len(test_ids)} test  (total {n})')
+        print(f'[GANTrainer] Regla ({rule_type}) en train: '
+              f'{self.pos_train_cases}/{self.n_train_cases} = {self.train_prop:.2%}')
+
+        if test_save_path:
+            os.makedirs(
+                os.path.dirname(os.path.abspath(test_save_path)), exist_ok=True)
+            self.log_test.to_csv(test_save_path, index=False)
+            print(f'[GANTrainer] Test split guardado: {test_save_path}')
+
     def _train_gan(self, X, output_path):
         d_opt = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
         g_opt = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
@@ -185,17 +246,21 @@ class GANTrainer:
         }
 
         model_params = {
-            'model_type': 'simple_gan',
-            'model_file': model_file,
-            'index_ac': self.index_ac,
-            'index_rl': self.index_rl,
-            'scale_args': scale_args_clean,
-            'norm_method': self.norm_method,
-            'max_trace_size': self.max_trace_size,
-            'one_timestamp': False,
-            'latent_dim': self.latent_dim,
-            # n_size kept for compatibility with ModelPredictor.load_parameters()
-            'n_size': 5,
+            'model_type':      'simple_gan',
+            'model_file':      model_file,
+            'index_ac':        self.index_ac,
+            'index_rl':        self.index_rl,
+            'scale_args':      scale_args_clean,
+            'norm_method':     self.norm_method,
+            'max_trace_size':  self.max_trace_size,
+            'one_timestamp':   False,
+            'latent_dim':      self.latent_dim,
+            'n_size':          5,
+            # Split metadata (None when using legacy 80/20 split)
+            'n_test_cases':    self.n_test_cases,
+            'train_prop':      self.train_prop,
+            'pos_train_cases': self.pos_train_cases,
+            'n_train_cases':   self.n_train_cases,
         }
         sup.create_json(model_params,
                         os.path.join(params_dir, 'model_parameters.json'))

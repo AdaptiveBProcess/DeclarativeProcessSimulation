@@ -67,10 +67,10 @@ class GANPredictor:
             if at_target:
                 break
 
-            if cond and current_prop < target:
+            if cond and current_prop <= target:
                 event_log.extend(trace)
                 self._save_trace(df_trace, case_id, parms)
-            elif not cond and current_prop > target:
+            elif not cond and current_prop >= target:
                 event_log.extend(trace)
                 self._save_trace(df_trace, case_id, parms)
 
@@ -142,14 +142,15 @@ class GANPredictor:
     @staticmethod
     def _current_proportion(df_generated, files_gen, parms):
         n_files = len(files_gen)
+        if n_files == 0:
+            pos, total = parms['pos_cases_org'], parms['total_cases_org']
+            return pos / total if total > 0 else 0.0
         if isinstance(df_generated, pd.DataFrame) and len(df_generated) > 0:
             gs = te.GenerateStats(df_generated, parms['ac_index'],
                                   parms['rules']['path'], parms['rules']['rule'])
             pos, total = gs.get_stats()
-        else:
-            pos, total = parms['pos_cases_org'], parms['total_cases_org']
-        denom = total + n_files
-        return (pos + n_files) / denom if denom > 0 else 0.0
+            return pos / total if total > 0 else 0.0
+        return 0.0
 
     # ── Persistence ───────────────────────────────────────────────────────────
 

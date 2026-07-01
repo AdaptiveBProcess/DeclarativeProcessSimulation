@@ -2,6 +2,7 @@ import support_modules.predictor_adapter as pa
 import support_modules.bimp_parser as bp
 import os
 import getopt
+import json
 import sys
 import gzip
 import shutil
@@ -253,17 +254,142 @@ def simulate_bimp(input_path="", output_path="", NAME="", PATH="",
     )
 
 
+def call_predict_gan(model_params, routes, params, model_folder_path):
+    """
+    Genera trazas con el predictor GAN y las consolida en un CSV en la carpeta
+    de alucinacion del pipeline.
+    """
+    from GenerativeGAN.model_prediction.gan_predictor import GANPredictor
+
+    index_ac = {int(k): v for k, v in model_params['index_ac'].items()}
+    index_rl = {int(k): v for k, v in model_params['index_rl'].items()}
+    ac_index = {v: int(k) for k, v in model_params['index_ac'].items()}
+
+    n_test_cases = model_params.get('n_test_cases') or 50
+    train_prop   = model_params.get('train_prop', 0.5)
+    pos_train    = model_params.get('pos_train_cases', 0)
+    n_train      = model_params.get('n_train_cases', 1)
+
+    rules      = te.extract_rules(path=str(routes['rules']))
+    model_path = os.path.join(model_folder_path, model_params['model_file'])
+
+    # Carpeta temporal para trazas individuales (limpiada antes de cada corrida)
+    traces_gen_path = os.path.join(str(routes['hallucinated']), '_traces_tmp')
+    if os.path.exists(traces_gen_path):
+        shutil.rmtree(traces_gen_path)
+    os.makedirs(traces_gen_path, exist_ok=True)
+
+    parms = {
+        'latent_dim':      model_params.get('latent_dim', 100),
+        'index_ac':        index_ac,
+        'index_rl':        index_rl,
+        'ac_index':        ac_index,
+        'num_cases':       n_test_cases,
+        'traces_gen_path': traces_gen_path,
+        'len_log':         n_test_cases,
+        'rules':           rules,
+        'new_prop_cases':  train_prop,
+        'pos_cases_org':   pos_train,
+        'total_cases_org': n_train,
+        'start_time':      pd.Timestamp('2020-01-01 08:00:00'),
+        'scale_args':      model_params['scale_args'],
+        'norm_method':     model_params['norm_method'],
+        'variant':         'Rules Based Random Choice',
+    }
+
+    print(f'\n[GAN] Generando {n_test_cases} trazas '
+          f'(proporcion objetivo: {train_prop:.2%}) ...')
+
+    event_log = GANPredictor().predict(parms, model_path, None, None, None)
+
+    output_folder = str(routes['hallucinated'])
+    os.makedirs(output_folder, exist_ok=True)
+
+    if event_log:
+        df_out = pd.DataFrame(event_log)
+        df_out = df_out[~df_out['task'].isin(['Start', 'End', 'start', 'end'])]
+        if 'role' in df_out.columns and 'user' not in df_out.columns:
+            df_out = df_out.rename(columns={'role': 'user'})
+        out_path = os.path.join(output_folder, params.log_filename)
+        df_out.to_csv(out_path, index=False)
+        print(f'[GAN] Log generado: {out_path}  '
+              f'({len(df_out)} eventos, {df_out["caseid"].nunique()} casos)')
+    else:
+        print('[GAN] Advertencia: no se generaron trazas.')
+
+
+def _run_gan_pipeline(model_params, routes, params, model_folder_path, run_id):
+    """Pipeline GAN: generacion + evaluacion de metricas vs test split."""
+    call_predict_gan(model_params, routes, params, model_folder_path)
+
+    test_split_path = routes['simulation'] / 'metricas' / 'test_split.csv'
+    generated_path  = routes['hallucinated'] / params.log_filename
+    metricas_path   = routes['simulation'] / 'metricas'
+
+    if not test_split_path.exists():
+        print(f'[Metrics] test_split.csv no encontrado: {test_split_path}')
+        print('[Metrics] Ejecuta primero dg_training.py con simple_gan.')
+        return
+
+    if not generated_path.exists():
+        print(f'[Metrics] Log generado no encontrado: {generated_path}')
+        return
+
+    from evaluacion.evaluator import evaluate
+    results = evaluate(
+        ref_path=str(test_split_path),
+        sim_path=str(generated_path),
+        support_threshold=0.90,
+        verbose=True,
+    )
+    df_results = pd.DataFrame([results])
+    df_results.insert(0, 'run_id', run_id)
+    df_results.insert(1, 'model_type', 'simple_gan')
+    out_csv = metricas_path / f'metrics_{run_id}.csv'
+    df_results.to_csv(str(out_csv), index=False)
+    print(f'[Metrics] Resultados guardados: {out_csv}')
+
+
 def main(argv):
     params = Params(
         root=Path(argv[0]) if argv else Path(),
-        log_filename="BPI_Challenge_2012.csv",
+        log_filename="RunningExample.csv",
+        hallucination_cases=50,  # primera prueba: verificar generación
+        tobe_cases=50,           # primera prueba: simulación liviana
     )
 
     r = params.routes
+    run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Detectar tipo de modelo desde model_parameters.json
+    if not r['models'].exists():
+        print(f'[ERROR] Carpeta de modelos no encontrada: {r["models"]}')
+        print('[ERROR] Ejecuta primero: python dg_training.py -m simple_gan')
+        return
+    model_folder_name = pa.get_latest_output_folder(str(r['models']))
+    if not model_folder_name:
+        print(f'[ERROR] No hay modelo entrenado en {r["models"]}')
+        print('[ERROR] Ejecuta primero: python dg_training.py -m simple_gan')
+        return
+    model_folder_path = str(r['models'] / model_folder_name)
+    params_json_path  = os.path.join(
+        model_folder_path, 'parameters', 'model_parameters.json')
+
+    model_params_json = {}
+    model_type = 'lstm'
+    if os.path.exists(params_json_path):
+        with open(params_json_path) as f:
+            model_params_json = json.load(f)
+        model_type = model_params_json.get('model_type', 'lstm')
+
+    if model_type == 'simple_gan':
+        _run_gan_pipeline(model_params_json, r, params, model_folder_path, run_id)
+        return
+
+    # ── Pipeline LSTM (codigo original) ───────────────────────────────────────
     sim = params.simulation  # num_instances = total_cases del log original
 
     rules_name = extract_rules(r["rules"])
-    run_id = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     asis_output = r["simulation"] / f"asis_{run_id}"
     tobe_output = r["simulation"] / f"{rules_name}_{run_id}"
 
@@ -332,9 +458,9 @@ def main(argv):
     for name, fn in sim_tasks:
         try:
             fn()
-            print(f"✅ {name} completado")
+            print(f"[OK] {name} completado")
         except Exception as e:
-            print(f"❌ {name} falló: {e}")
+            print(f"[FAIL] {name} fallo: {e}")
    
 
 if __name__ == "__main__":

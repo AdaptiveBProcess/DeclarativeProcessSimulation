@@ -42,10 +42,10 @@ def run_simod_docker(input_path="data/1.input_logs", output_path="data/2.bps_asi
     result = subprocess.run(docker_command, capture_output=True, text=True)
 
     if result.returncode == 0:
-        print("✅ Simod ran successfully.\n")
+        print("[OK] Simod ran successfully.\n")
         print(result.stdout)
     else:
-        print("❌ Simod failed.\n")
+        print("[FAIL] Simod failed.\n")
         print("STDOUT:\n", result.stdout)
         print("STDERR:\n", result.stderr)
         raise RuntimeError("Simod execution failed. Check the logs for details.")
@@ -78,10 +78,10 @@ def run_prosimos_docker(input_path="data/output_tobe", output_path="data/output_
     result = subprocess.run(docker_command, capture_output=True, text=True)
 
     if result.returncode == 0:
-        print("✅ Prosimos ran successfully.\n")
+        print("[OK] Prosimos ran successfully.\n")
         print(result.stdout)
     else:
-        print("❌ Prosimos failed.\n")
+        print("[FAIL] Prosimos failed.\n")
         print("STDOUT:\n", result.stdout)
         print("STDERR:\n", result.stderr)
         raise RuntimeError("Prosimos execution failed. Check the logs for details.")
