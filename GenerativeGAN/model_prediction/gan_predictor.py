@@ -6,6 +6,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import mae as keras_mae
 
 from support_modules import traces_evaluation as te
+from GenerativeGAN.model_training.models.model_simple_gan import CUSTOM_OBJECTS
 
 
 class GANPredictor:
@@ -28,7 +29,9 @@ class GANPredictor:
     # ── Core generation loop ──────────────────────────────────────────────────
 
     def _generate_traces(self, parms, model_path):
-        model = load_model(model_path, custom_objects={'mae': keras_mae})
+        model = load_model(
+            model_path,
+            custom_objects={'mae': keras_mae, **CUSTOM_OBJECTS})
         latent_dim = int(parms.get('latent_dim', 100))
         n_ac = len(parms['index_ac'])
         n_rl = len(parms['index_rl'])

@@ -2,7 +2,7 @@
 
 > Contexto persistente para Claude Code sobre el trabajo hecho en esta rama.
 > Leer completo al inicio de cada sesión que retome este tema.
-> Última actualización: 2026-08-01.
+> Última actualización: 2026-08-02.
 
 ---
 
@@ -16,9 +16,16 @@
    (probable interferencia de sincronización de OneDrive).
 4. Se hizo un análisis a fondo del pipeline GAN (`dg_training.py` → `dg_prediction.py`)
    contra el código real de la rama, cruzado con una tabla de hiperparámetros de 6
-   versiones (V1-V6) que el usuario aportó. **Hallazgo crítico**: el código en el repo
-   solo implementa la arquitectura V1; las versiones V2-V6 (incluida V4, la
+   versiones (V1-V6) que el usuario aportó. **Hallazgo crítico (histórico, ver §10
+   para el estado actual)**: el código en el repo
+   solo implementaba la arquitectura V1; las versiones V2-V6 (incluida V4, la
    seleccionada) nunca se comitearon — solo existen como configuración documentada.
+5. **(2026-08-02)** Se reconstruyó la arquitectura V4 en código (Transformer +
+   Time2Vec + WGAN-GP), reemplazando V1. Una revisión de código independiente
+   encontró y se corrigió un bug preexistente en el cálculo de CONF (orden de
+   argumentos Activation/Target en `evaluacion/metrics.py`). Ver §10 para el detalle
+   completo — es la sección más reciente y la que hay que leer primero si se retoma
+   este trabajo.
 
 ---
 
@@ -86,7 +93,7 @@ Archivos clave:
 |---|---|
 | `dg_training.py::main()` | Entry point de entrenamiento; dispatcher lstm vs gan por `-m` |
 | `GenerativeGAN/model_training/gan_trainer.py::GANTrainer` | Split 70/10/20, entrenamiento, export de parámetros |
-| `GenerativeGAN/model_training/models/model_simple_gan.py` | Arquitectura generador/discriminador (**hoy: solo V1**) |
+| `GenerativeGAN/model_training/models/model_simple_gan.py` | Arquitectura generador/discriminador (**V4 desde 2026-08-02** — Transformer+Time2Vec, ver §10) |
 | `GenerativeGAN/model_training/samples_creator.py::GANSamplesCreator` | Convierte log a tensor one-hot `(n_traces, max_len, n_ac+n_rl+2)` |
 | `dg_prediction.py::main()` | Dispatcher lstm vs gan por `model_type` leído del json |
 | `dg_prediction.py::call_predict_gan / _run_gan_pipeline` | Orquesta generación + evaluación GAN |
@@ -101,7 +108,7 @@ pipeline es sólida y confiable.
 
 ---
 
-## 4. HALLAZGO CRÍTICO — el código solo implementa V1, no V4 (la seleccionada)
+## 4. HALLAZGO CRÍTICO (HISTÓRICO, RESUELTO 2026-08-02 — ver §10) — el código solo implementaba V1, no V4 (la seleccionada)
 
 Comparando el código real de `model_simple_gan.py` contra la tabla de hiperparámetros
 del usuario (`matriz-asignaciones(Iteraciones-RULEGAN).csv`, no versionada en el repo,
@@ -247,15 +254,24 @@ el usuario prefirió cerrar el análisis antes de abordarlo).
 
 ---
 
-## 8. Próximos pasos (pendientes, ninguno iniciado)
+## 8. Próximos pasos
 
-1. **Reconstruir V4 en código** (`model_simple_gan.py` + `gan_trainer.py`):
-   Transformer + Time2Vec + WGAN-GP + gradient penalty, siguiendo la especificación
-   exacta de §5. Sin esto, `dg_training.py -m simple_gan` sigue entrenando V1.
+1. [x] **Reconstruir V4 en código** — hecho 2026-08-02, ver §10.
 2. **Diseñar métrica de novedad/diversidad** (§7) si se va a defender la afirmación
    de "comportamiento no visto" con evidencia, no solo por diseño arquitectónico.
+   Sigue pendiente.
 3. Decidir qué hacer con los cambios sueltos del submódulo `GenerativeLSTM` (§2,
    detached HEAD, sin commit) — no bloquea lo anterior pero sigue pendiente.
+4. **(nuevo, 2026-08-02)** Ejecutar `dg_training.py -m simple_gan` +
+   `dg_prediction.py` con `RunningExample.csv` en el venv `deep_generator` — ver §10
+   para los comandos exactos y qué revisar en los resultados antes de dar la corrida
+   por buena.
+5. **(nuevo, 2026-08-02)** Verificar con una prueba sintética de 15 minutos que el
+   fix de Activation/Target en `evaluacion/metrics.py` (§10) da el resultado correcto
+   para al menos una regla de la familia Precedence y una de Response/Succession con
+   una traza de ejemplo construida a mano — el fix se razonó y se verificó contra el
+   código fuente de pm4py y contra datos reales del repo, pero no se pudo *ejecutar*
+   (pm4py no está instalado en el entorno de herramientas de Claude Code).
 
 ---
 
@@ -272,3 +288,101 @@ el usuario prefirió cerrar el análisis antes de abordarlo).
   código original no existe.
 - Mantener este archivo actualizado: al completar un punto de §8, marcarlo hecho y
   anotar el hallazgo, igual que se hace en `CLAUDE.md`.
+
+---
+
+## 10. Etapa 1 completada — reconstrucción de V4 y verificación (sesión 2026-08-02)
+
+### 10.1 Qué se implementó
+
+Se reemplazó la arquitectura V1 (GRU + one-hot + BCE) por V4 (Transformer +
+Time2Vec + WGAN-GP), siguiendo exactamente la especificación de §5. Archivos
+modificados:
+
+| Archivo | Cambio |
+|---|---|
+| `GenerativeGAN/model_training/models/model_simple_gan.py` | Reescritura completa: capas `Time2Vec`, `PositionalEncoding`, `TransformerBlock` (Pre-LN); `build_generator`/`build_discriminator` con `d_model=64, num_heads=4, ff_dim=256, num_blocks=3`; discriminador termina en `Dense(1)` sin activación (score Wasserstein, no sigmoid). Exporta `CUSTOM_OBJECTS` para serialización. |
+| `GenerativeGAN/model_training/gan_trainer.py` | `__init__` lee los nuevos hiperparámetros (defaults V4). `_train_gan` reescrito como bucle WGAN-GP manual: `n_critic=5` pasos de discriminador por 1 de generador, gradient penalty vía `GradientTape` anidado (sin `@tf.function` en la función de penalty para no romper el nesting), Adam D/G separados con los lr/betas de la tabla, **sin** pérdidas auxiliares de bigrama/cycle-time (eso es V5/V6). Se agregó `checkpoint_every=100` — guarda el generador cada 100 epochs en `<output_path>/checkpoints/`. |
+| `dg_training.py` | Cuando `model_family == 'simple_gan'`, sobreescribe `epochs=1000, latent_dim=64` y agrega los hiperparámetros de arquitectura V4. |
+| `GenerativeGAN/model_prediction/gan_predictor.py` | `load_model` ahora registra `CUSTOM_OBJECTS` del módulo de arquitectura — sin esto, cargar un `.h5` de V4 fallaría porque Keras no reconocería las capas custom. |
+
+**No se tocó** (confirmado compatible): `samples_creator.py`, `dg_prediction.py`
+(fuera del punto anterior), `evaluacion/evaluator.py`.
+
+### 10.2 Revisión independiente (etapa 4) — resultado
+
+Se lanzó un agente sin contexto previo de la implementación para revisar la
+arquitectura V4 y las métricas RED/CTD/2GD/CONF desde cero. Resultado:
+
+**Arquitectura V4 — confirmada correcta**, incluido el punto más delicado
+técnicamente: el nesting de `GradientTape` para el gradient penalty (si estuviera
+mal, entrenaría sin errores pero con el gradiente del penalty desconectado — bug
+silencioso grave). Encontró y se corrigieron 2 detalles menores:
+- Faltaba `use_bias=False` en la proyección categórica del discriminador (`cat_proj`).
+- `dropout` no se propagaba desde `GANTrainer` hasta `build_discriminator` (el
+  generador sí lo recibía, el discriminador se quedaba en el default de la clase).
+
+**Métricas RED/CTD/2GD — confirmadas correctas** matemáticamente (EMD/Wasserstein-1,
+TVD como equivalente exacto del EMD categórico, agregación por caso sin mezclar
+trazas).
+
+### 10.3 Bug encontrado y corregido en CONF (código preexistente, `evaluacion/metrics.py`)
+
+El agente marcó como sospechoso (confianza moderada, no pudo ejecutar pm4py) que
+`_REVERSE_ARGS = {"altsuccession", "chainsuccession"}` invertía el orden de
+argumentos solo para esas 2 plantillas al construir el modelo pm4py desde las reglas
+de MINERful.
+
+**Verificación propia, en dos pasos:**
+1. Confirmé contra el código fuente real de pm4py (`classic.py::__check_alt_succession`
+   / `__check_chain_succession`, vía fetch a GitHub) que pm4py usa un orden **uniforme**
+   `(act_couple[0]=activación, act_couple[1]=target)` para TODAS las plantillas
+   binarias, sin excepción para alt/chain-succession — descarta la hipótesis original
+   de "pm4py tiene semántica invertida para estas 2 plantillas".
+2. Pero al releer los CSV de MINERful que ya habíamos visto en esta sesión
+   (`modelo_descubierto_peor.csv`, ambas versiones HEAD/origin del merge de
+   `recommended_module`), encontré el problema real: **el string `Constraint` de
+   MINERful no tiene orden consistente entre familias de plantillas**. Ejemplo real
+   del propio repo: `'Precedence(A_SUBMITTED, A_DECLINED)'` con columnas
+   `Activation='[A_DECLINED]'`, `Target='[A_SUBMITTED]'` — el primer argumento del
+   string es el **target**, no la activación. La familia `Response`/`Succession` sí
+   escribe activación-primero (`'Response(A_PARTLYSUBMITTED, A_DECLINED)'` →
+   `Activation=[A_PARTLYSUBMITTED]`). El bug real no era "2 plantillas invertidas" —
+   era "el código nunca debió parsear el string `Constraint` por posición; MINERful ya
+   entrega columnas `Activation`/`Target` sin ambigüedad y el código las ignoraba".
+
+**Fix aplicado**: `_minerful_to_pm4py_model` ahora lee `Activation`/`Target`
+directamente (con fallback al parseo posicional del string, sin inversión especial,
+si esas columnas no existieran). Se eliminó `_REVERSE_ARGS`.
+
+**Impacto**: cualquier corrida anterior que haya reportado CONF con reglas de la
+familia `Precedence` en el conjunto filtrado (soporte≥90%) tiene un CONF
+potencialmente sesgado — no confiar en números de CONF calculados antes de este fix
+sin volver a correrlos.
+
+**Sigue pendiente** (§8 punto 5): verificación por ejecución real con pm4py — el
+razonamiento está verificado contra fuente y contra datos reales del repo, pero ni el
+agente revisor ni Claude Code pudieron ejecutar pm4py en este entorno.
+
+### 10.4 Cómo ejecutar (etapa 2 — la corre el usuario, no Claude Code)
+
+Claude Code no tiene TensorFlow/pm4py en su entorno de herramientas — el usuario
+ejecuta manualmente en el venv `deep_generator`:
+
+```bash
+python dg_training.py -m simple_gan
+python dg_prediction.py
+```
+
+Ambos ya apuntan a `RunningExample.csv` por defecto. Salidas esperadas:
+- `data/1.predicton_models/RunningExample/<run_id>/RunningExample.h5` (generador) +
+  `checkpoints/generator_epoch0100.h5`, `...0200.h5`, etc.
+- `data/1.predicton_models/RunningExample/<run_id>/parameters/model_parameters.json`
+  (incluye ahora `d_model`, `num_heads`, `n_critic`, `gp_lambda`, etc. — documentación,
+  no se usan en inferencia).
+- `data/4.simulation_results/RunningExample/metricas/metrics_<run_id>.csv` con RED,
+  CTD, 2GD, CONF (etapa 3 — ya integrada, no requiere paso manual aparte).
+
+Con 1000 epochs, `n_critic=5` y ~378 trazas de train (70% de 540), el entrenamiento
+en CPU debería tomar de minutos a un par de horas — no se ha medido el tiempo real
+porque Claude Code no puede ejecutar esta corrida.

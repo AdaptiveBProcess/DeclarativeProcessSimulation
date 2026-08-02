@@ -219,6 +219,19 @@ def main(argv):
     parameters['model_type'] = model_type_map.get(model_family, [])
     if 'simple_gan' in parameters['model_type']:
         parameters['gan_pretrain'] = False
+        # Hiperparametros V4 (Transformer + Time2Vec + WGAN-GP) — reemplazan los
+        # valores genericos de arriba, pensados para el pipeline LSTM.
+        # Ver comentarios-cloud/CLOUD.md #5 para la especificacion completa.
+        parameters['epochs'] = 1000
+        parameters['latent_dim'] = 64
+        parameters['d_model'] = 64
+        parameters['num_heads'] = 4
+        parameters['ff_dim'] = 256
+        parameters['num_blocks'] = 3
+        parameters['dropout'] = 0.1
+        parameters['time2vec_dim'] = 16
+        parameters['n_critic'] = 5
+        parameters['gp_lambda'] = 10.0
 
     # Preprocesar el log: crear start_timestamp y end_timestamp desde lifecycle:transition
     # El archivo original NO se modifica; el resultado va a una carpeta separada.
