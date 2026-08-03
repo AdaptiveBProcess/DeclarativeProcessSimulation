@@ -555,4 +555,68 @@ no comitear la copia de OneDrive si reaparece). Ejecutar con:
 ```
 python verificar_conf_selfcheck.py
 ```
-**Estado: pendiente de que el usuario lo corra y comparta el resultado.**
+**Estado: RESUELTO — ver §13.**
+
+---
+
+## 13. CONF corregido (confirmado por ejecución) y RED revertido a la definición correcta (2026-08-03)
+
+### 13.1 Self-check de CONF — bug real confirmado y corregido
+
+El self-check (`test_split.csv` contra sí mismo) dio **48,78%**, matemáticamente
+imposible si MINERful y pm4py estuvieran de acuerdo (`dev_fitness` es fraccional;
+promediar 41 reglas todas con soporte≥90% individual no puede dar <90%). Se creó
+`diagnostico_conf_por_regla.py` para aislar la causa regla por regla — resultado
+(datos reales, no hipótesis):
+
+| Familia | Ejemplo | Gap MINERful vs. pm4py |
+|---|---|---|
+| `response`, `altresponse`, `chainresponse`, `coexistence` | — | 0% (perfecto) |
+| `precedence`, `altprecedence`, `chainprecedence`, `succession`, `altsuccession`, `chainsuccession` | `altprecedence('EVENT 7 END','EVENT 1 START')` | **100%** en las 20 reglas de esta familia |
+| `init` | `('nan', 'EVENT 1 START')` | 100% (bug distinto) |
+
+**Causa raíz (familia Precedence)**: MINERful usa `Activation` con semántica de
+"evento que dispara la verificación" (runtime monitoring) — para `Response` eso es
+el evento anterior (coincide con lo que pm4py espera), pero para `Precedence` es el
+evento **posterior** (el que, al ocurrir, dispara "¿ya pasó el prerrequisito?").
+pm4py en cambio siempre espera `act_couple[0]=prerequisito`. Fix: `_PRECEDENCE_LINEAGE`
+en `evaluacion/metrics.py` invierte `(target, activation)` solo para esa familia de 6
+plantillas. **Esto invalida por completo el intento de fix del `#10.3` de ayer**
+(que asumía, incorrectamente, que ninguna plantilla necesitaba inversión).
+
+**Causa raíz (`init`)**: celdas `Activation` vacías (plantillas unarias) llegan como
+`NaN` de pandas; `str(nan) == 'nan'` (string no vacío) rompía la detección de
+"unaria". Fix: `_clean_activity` ahora chequea `pd.isna(raw)` primero.
+
+**Confirmado por el usuario tras el fix**: self-check de CONF = **100%** sobre
+`test_split.csv`. El cálculo de CONF ahora es correcto y confiable.
+
+### 13.2 RED revertido a la definición temporal (Graziosi et al. 2024)
+
+Al pedirle al usuario que describiera la metodología de las 4 métricas para
+verificarla contra el código, se detectó que la definición de RED activa desde el
+merge de §11 (posición **ordinal**, `indice/longitud * 100`) no coincide con la
+definición del paper de referencia ni con la que el usuario tenía documentada
+(posición **temporal**, `(timestamp-inicio)/(fin-inicio)`). Revertido en
+`evaluacion/metrics.py::compute_red` a la definición temporal original (escala
+`[0,1]`, con la guarda para trazas de instante único). CTD, 2GD y CONF sí coincidían
+exactamente con la descripción del usuario — solo RED estaba mal.
+
+### 13.3 Estado actual y siguiente paso
+
+Con ambos fixes (CONF y RED) ya en `origin/gan-module` (commits `47c29d6`,
+`36bc33e`), **ningún número de CONF ni de RED reportado hasta ahora en este archivo
+es comparable con lo que se obtendría hoy** — todos se calcularon con al menos uno
+de los dos bugs presentes. Antes de reportar cualquier conclusión sobre el
+desempeño de `GANTrainerV2`, hay que volver a correr la evaluación completa:
+
+```
+python dg_training.py -m transformer_wgan
+python dg_prediction.py
+```
+
+Y comparar las 4 métricas resultantes (ya todas con cálculo correcto) contra la
+tabla de referencia de §5 — recordando que el origen exacto de esa tabla de
+referencia sigue con la duda abierta de §11.5 (¿bajo qué versión de RED se obtuvo
+el 0,0202?). Dado que la definición ya quedó fijada a la temporal (la única
+consistente con el paper), esa comparación ahora sí es metodológicamente válida.
