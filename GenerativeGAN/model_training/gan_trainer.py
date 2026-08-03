@@ -36,9 +36,26 @@ class GANTrainer:
         norm = params.get('norm_method', 'max')
         self.norm_method = norm[0] if isinstance(norm, list) else norm
 
-        self.latent_dim = int(params.get('latent_dim', 100))
-        self.epochs = int(params.get('epochs', 200))
+        self.latent_dim = int(params.get('latent_dim', 64))
+        self.epochs = int(params.get('epochs', 1000))
         self.batch_size = int(params.get('batch_size', 32))
+
+        # ── Hiperparametros de arquitectura (V4: Transformer + Time2Vec) ───────
+        self.d_model = int(params.get('d_model', 64))
+        self.num_heads = int(params.get('num_heads', 4))
+        self.ff_dim = int(params.get('ff_dim', 256))
+        self.num_blocks = int(params.get('num_blocks', 3))
+        self.dropout = float(params.get('dropout', 0.1))
+        self.time2vec_dim = int(params.get('time2vec_dim', 16))
+
+        # ── Hiperparametros de entrenamiento WGAN-GP ────────────────────────────
+        self.n_critic = int(params.get('n_critic', 5))
+        self.gp_lambda = float(params.get('gp_lambda', 10.0))
+
+        # Guarda un checkpoint del generador cada N epochs (protege corridas
+        # largas de interrupciones — ver comentarios-cloud/CLOUD.md #2 sobre
+        # archivos borrados por interferencia de sincronizacion de OneDrive).
+        self.checkpoint_every = int(params.get('checkpoint_every', 100))
 
         # ── 1. Load & preprocess ──────────────────────────────────────────────
         self.log = self._load_log(params)
@@ -85,9 +102,15 @@ class GANTrainer:
         # ── 7. Build GAN architecture ─────────────────────────────────────────
         n_ac = len(self.ac_index)
         n_rl = len(self.rl_index)
-        self.generator = build_generator(self.latent_dim, self.max_trace_size,
-                                         n_ac, n_rl)
-        self.discriminator = build_discriminator(self.max_trace_size, n_ac, n_rl)
+        self.generator = build_generator(
+            self.latent_dim, self.max_trace_size, n_ac, n_rl,
+            d_model=self.d_model, num_heads=self.num_heads, ff_dim=self.ff_dim,
+            num_blocks=self.num_blocks, dropout=self.dropout)
+        self.discriminator = build_discriminator(
+            self.max_trace_size, n_ac, n_rl,
+            d_model=self.d_model, num_heads=self.num_heads, ff_dim=self.ff_dim,
+            num_blocks=self.num_blocks, time2vec_dim=self.time2vec_dim,
+            dropout=self.dropout)
 
         # ── 8. Train ──────────────────────────────────────────────────────────
         output_path = os.path.join(self.output_folder, sup.folder_id())
@@ -194,46 +217,88 @@ class GANTrainer:
             print(f'[GANTrainer] Test split guardado: {test_save_path}')
 
     def _train_gan(self, X, output_path):
-        d_opt = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
-        g_opt = tf.keras.optimizers.Adam(learning_rate=0.0002, beta_1=0.5)
+        """
+        Entrenamiento WGAN-GP (Gulrajani et al., 2017):
+          - discriminador = critico (score sin activacion, sin sigmoid)
+          - n_critic pasos de D por cada paso de G
+          - gradient penalty vía GradientTape anidado (double backprop) dentro del
+            mismo tf.function del paso de D — NO se decora _gradient_penalty por
+            separado, para que el tape externo pueda diferenciar a traves de ella.
+        """
+        d_opt = tf.keras.optimizers.Adam(learning_rate=1e-4, beta_1=0.0, beta_2=0.9)
+        g_opt = tf.keras.optimizers.Adam(learning_rate=2e-4, beta_1=0.0, beta_2=0.9)
 
-        self.discriminator.compile(optimizer=d_opt, loss='binary_crossentropy')
+        gp_lambda = tf.constant(self.gp_lambda, dtype=tf.float32)
 
-        # Combined model: noise → generator → discriminator (frozen)
-        noise_in = tf.keras.Input(shape=(self.latent_dim,))
-        self.discriminator.trainable = False
-        validity = self.discriminator(self.generator(noise_in))
-        combined = tf.keras.Model(noise_in, validity, name='gan')
-        combined.compile(optimizer=g_opt, loss='binary_crossentropy')
-        self.discriminator.trainable = True
+        def _gradient_penalty(real, fake):
+            batch_size = tf.shape(real)[0]
+            eps = tf.random.uniform((batch_size, 1, 1), 0.0, 1.0)
+            interpolated = eps * real + (1.0 - eps) * fake
+            with tf.GradientTape() as gp_tape:
+                gp_tape.watch(interpolated)
+                pred = self.discriminator(interpolated, training=True)
+            grads = gp_tape.gradient(pred, [interpolated])[0]
+            norm = tf.sqrt(
+                tf.reduce_sum(tf.square(grads), axis=[1, 2]) + 1e-12)
+            return tf.reduce_mean(tf.square(norm - 1.0))
+
+        @tf.function
+        def _critic_step(real):
+            batch_size = tf.shape(real)[0]
+            noise = tf.random.normal((batch_size, self.latent_dim))
+            with tf.GradientTape() as tape:
+                fake = self.generator(noise, training=True)
+                d_real = self.discriminator(real, training=True)
+                d_fake = self.discriminator(fake, training=True)
+                gp = _gradient_penalty(real, fake)
+                d_loss = (tf.reduce_mean(d_fake) - tf.reduce_mean(d_real)
+                          + gp_lambda * gp)
+            grads = tape.gradient(d_loss, self.discriminator.trainable_variables)
+            d_opt.apply_gradients(zip(grads, self.discriminator.trainable_variables))
+            return d_loss
+
+        @tf.function
+        def _generator_step(batch_size):
+            noise = tf.random.normal((batch_size, self.latent_dim))
+            with tf.GradientTape() as tape:
+                fake = self.generator(noise, training=True)
+                d_fake = self.discriminator(fake, training=True)
+                g_loss = -tf.reduce_mean(d_fake)
+            grads = tape.gradient(g_loss, self.generator.trainable_variables)
+            g_opt.apply_gradients(zip(grads, self.generator.trainable_variables))
+            return g_loss
 
         n = len(X)
-        half_batch = max(self.batch_size // 2, 1)
+        X_tf = tf.constant(X, dtype=tf.float32)
+        steps_per_epoch = max(n // self.batch_size, 1)
+        batch_size_t = tf.constant(self.batch_size, dtype=tf.int32)
+
+        checkpoint_dir = os.path.join(output_path, 'checkpoints')
+        if self.checkpoint_every > 0:
+            os.makedirs(checkpoint_dir, exist_ok=True)
 
         for epoch in range(self.epochs):
-            # ── Discriminator step ────────────────────────────────────────────
-            idx = np.random.randint(0, n, half_batch)
-            real_traces = X[idx]
-            noise = np.random.normal(0, 1, (half_batch, self.latent_dim))
-            fake_traces = self.generator.predict(noise, verbose=0)
-
-            self.discriminator.trainable = True
-            d_real = self.discriminator.train_on_batch(
-                real_traces, np.ones((half_batch, 1)) * 0.9)   # label smoothing
-            d_fake = self.discriminator.train_on_batch(
-                fake_traces, np.zeros((half_batch, 1)))
-            d_loss = 0.5 * (d_real + d_fake)
-
-            # ── Generator step ────────────────────────────────────────────────
-            noise = np.random.normal(0, 1, (self.batch_size, self.latent_dim))
-            self.discriminator.trainable = False
-            g_loss = combined.train_on_batch(
-                noise, np.ones((self.batch_size, 1)))
-            self.discriminator.trainable = True
+            d_loss_acc, g_loss_acc = 0.0, 0.0
+            for _ in range(steps_per_epoch):
+                for _ in range(self.n_critic):
+                    idx = np.random.randint(0, n, self.batch_size)
+                    real_batch = tf.gather(X_tf, idx)
+                    d_loss = _critic_step(real_batch)
+                g_loss = _generator_step(batch_size_t)
+                d_loss_acc += float(d_loss)
+                g_loss_acc += float(g_loss)
 
             if epoch % 20 == 0:
-                print(f'[GAN] epoch {epoch:04d}/{self.epochs} '
-                      f'| D: {d_loss:.4f} | G: {g_loss:.4f}')
+                print(f'[GAN-WGANGP] epoch {epoch:04d}/{self.epochs} '
+                      f'| D: {d_loss_acc / steps_per_epoch:.4f} '
+                      f'| G: {g_loss_acc / steps_per_epoch:.4f}')
+
+            if (self.checkpoint_every > 0 and epoch > 0
+                    and epoch % self.checkpoint_every == 0):
+                ckpt_path = os.path.join(
+                    checkpoint_dir, f'generator_epoch{epoch:04d}.h5')
+                self.generator.save(ckpt_path)
+                print(f'[GAN-WGANGP] checkpoint guardado: {ckpt_path}')
 
     def _export_params(self, output_path, model_file, log_name):
         params_dir = os.path.join(output_path, 'parameters')
@@ -256,6 +321,16 @@ class GANTrainer:
             'one_timestamp':   False,
             'latent_dim':      self.latent_dim,
             'n_size':          5,
+            # Arquitectura V4 (documentacion/reproducibilidad — no se usan en
+            # inferencia, la arquitectura ya queda fija dentro del .h5)
+            'd_model':         self.d_model,
+            'num_heads':       self.num_heads,
+            'ff_dim':          self.ff_dim,
+            'num_blocks':      self.num_blocks,
+            'dropout':         self.dropout,
+            'time2vec_dim':    self.time2vec_dim,
+            'n_critic':        self.n_critic,
+            'gp_lambda':       self.gp_lambda,
             # Split metadata (None when using legacy 80/20 split)
             'n_test_cases':    self.n_test_cases,
             'train_prop':      self.train_prop,

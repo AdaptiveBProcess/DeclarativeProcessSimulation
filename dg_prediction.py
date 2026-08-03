@@ -386,7 +386,7 @@ def _run_gan_pipeline(model_params, routes, params, model_folder_path, run_id, n
 def main(argv):
     params = Params(
         root=Path(argv[0]) if argv else Path(),
-        log_filename="bpic2012_a.csv",
+        log_filename="RunningExample.csv",
         hallucination_cases=50,  # primera prueba: verificar generación
         tobe_cases=50,           # primera prueba: simulación liviana
     )

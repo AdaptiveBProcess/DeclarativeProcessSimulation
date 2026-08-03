@@ -295,10 +295,22 @@ _MINERFUL_TO_PM4PY: Dict[str, str] = {
     # "notsuccession", "notcoexistence", "notchainsuccession", etc. → omitidos
 }
 
-# MINERful define XSuccession(A, B) con semantica inversa a pm4py:
-# MINERful AlternateSjccession(A,B) = pm4py altsuccession(B,A)
-# MINERful ChainSjccession(A,B)     = pm4py chainsuccession(B,A)
-_REVERSE_ARGS: set = {"altsuccession", "chainsuccession"}
+# NOTA (verificado 2026-08-xx contra datos reales de MINERful en este repo y
+# contra el codigo fuente de pm4py `classic.py::__check_alt_succession` /
+# `__check_chain_succession`): el string 'Constraint' de MINERful NO tiene un
+# orden de argumentos consistente entre familias de plantillas — la familia
+# Precedence (Precedence, NotPrecedence, ChainPrecedence, NotChainPrecedence...)
+# escribe el string como Template(Target, Activation) mientras que la familia
+# Response/Succession lo escribe como Template(Activation, Target). Ejemplo real
+# de este repo: 'Precedence(A_SUBMITTED, A_DECLINED)' con columnas
+# Activation='[A_DECLINED]', Target='[A_SUBMITTED]' — el primer argumento del
+# string es el TARGET, no la activacion. Parsear el string por posicion (como
+# hacia el codigo anterior con _REVERSE_ARGS) adivina mal para toda la familia
+# Precedence. La correccion es usar directamente las columnas 'Activation' y
+# 'Target' que MINERful ya entrega sin ambiguedad — ver _minerful_to_pm4py_model.
+# pm4py en si mismo SI usa un orden uniforme (act_couple[0]=activacion,
+# act_couple[1]=target) para todas las plantillas binarias, incluidas
+# altsuccession/chainsuccession — no requiere ninguna inversion especial.
 
 
 def _df_to_xes_cols(df: pd.DataFrame) -> pd.DataFrame:
@@ -392,12 +404,25 @@ def _minerful_to_pm4py_model(rules_df: pd.DataFrame, support_threshold: float = 
     """
     cols_lower = {c.lower().strip(): c for c in rules_df.columns}
     constraint_col    = cols_lower.get("constraint")
+    activation_col    = cols_lower.get("activation")
+    target_col        = cols_lower.get("target")
     trace_support_col = cols_lower.get("trace support")   # columna clave
     support_col       = cols_lower.get("support")         # fallback
 
     if constraint_col is None:
         warnings.warn("El CSV de MINERful no tiene columna 'Constraint'.")
         return {}
+    if activation_col is None or target_col is None:
+        warnings.warn(
+            "El CSV de MINERful no tiene columnas 'Activation'/'Target' — "
+            "se cae a parsear el string 'Constraint' por posicion (menos "
+            "confiable para la familia Precedence, ver comentario arriba).")
+
+    def _clean_activity(raw) -> str:
+        s = str(raw).strip()
+        if s.startswith('[') and s.endswith(']'):
+            s = s[1:-1]
+        return s.strip().strip("'\"").strip()
 
     model: Dict = {}
 
@@ -424,7 +449,6 @@ def _minerful_to_pm4py_model(rules_df: pd.DataFrame, support_threshold: float = 
         if pm4py_tmpl is None:
             continue
 
-        args = [a.strip() for a in m.group(2).split(",")]
         counts = {
             "support":    int(round(trace_sup * 100)),
             "confidence": int(round(trace_sup * 100)),
@@ -433,12 +457,26 @@ def _minerful_to_pm4py_model(rules_df: pd.DataFrame, support_threshold: float = 
         if pm4py_tmpl not in model:
             model[pm4py_tmpl] = {}
 
-        if len(args) == 1:
-            model[pm4py_tmpl][args[0]] = counts
-        elif len(args) >= 2:
-            # Algunos templates de MINERful tienen orden de argumentos invertido respecto a pm4py
-            a0, a1 = (args[1], args[0]) if pm4py_tmpl in _REVERSE_ARGS else (args[0], args[1])
-            model[pm4py_tmpl][(a0, a1)] = counts
+        if activation_col is not None and target_col is not None:
+            # Fuente de verdad: columnas Activation/Target de MINERful, sin
+            # ambiguedad de orden entre familias de plantillas.
+            activation = _clean_activity(row[activation_col])
+            target     = _clean_activity(row[target_col])
+            if not activation:
+                # Plantillas unarias (existence, absence, init, end...): el
+                # unico argumento relevante queda en Target.
+                model[pm4py_tmpl][target] = counts
+            else:
+                model[pm4py_tmpl][(activation, target)] = counts
+        else:
+            # Fallback: orden posicional del string 'Constraint' (pm4py usa
+            # orden uniforme act_couple[0]=activacion, act_couple[1]=target
+            # para todas las plantillas binarias — sin inversion especial).
+            args = [a.strip() for a in m.group(2).split(",")]
+            if len(args) == 1:
+                model[pm4py_tmpl][args[0]] = counts
+            elif len(args) >= 2:
+                model[pm4py_tmpl][(args[0], args[1])] = counts
 
     # pm4py 2.7.x requiere que las plantillas base existan en el modelo
     # cuando sus variantes alternas estan presentes (acceso interno a model['response'], etc.)

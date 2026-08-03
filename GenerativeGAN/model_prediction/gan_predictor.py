@@ -6,6 +6,7 @@ from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import mae as keras_mae
 
 from support_modules import traces_evaluation as te
+from GenerativeGAN.model_training.models.model_simple_gan import CUSTOM_OBJECTS
 
 
 class GANPredictor:
@@ -29,19 +30,15 @@ class GANPredictor:
 
     def _generate_traces(self, parms, model_path):
         if os.path.isdir(model_path):
+            # SavedModel (GANTrainerV2 / transformer_wgan) — sin custom_objects
+            # por diseno (ver docstring de GANTrainerV2._export_params).
             model = load_model(model_path)
         else:
-            try:
-                from GenerativeGAN.model_training.models.model_wgan_transformer import (
-                    Time2Vec, TransformerBlock)
-                custom_objs = {
-                    'mae': keras_mae,
-                    'Time2Vec': Time2Vec,
-                    'TransformerBlock': TransformerBlock,
-                }
-            except ImportError:
-                custom_objs = {'mae': keras_mae}
-            model = load_model(model_path, custom_objects=custom_objs)
+            # .h5 (GANTrainer / simple_gan) — necesita las capas custom de
+            # model_simple_gan.py registradas para poder deserializar.
+            model = load_model(
+                model_path,
+                custom_objects={'mae': keras_mae, **CUSTOM_OBJECTS})
 
         latent_dim  = int(parms.get('latent_dim', 100))
         n_ac        = len(parms['index_ac'])
