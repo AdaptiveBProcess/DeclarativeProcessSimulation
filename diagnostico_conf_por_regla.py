@@ -56,13 +56,17 @@ def main():
     constraint_col = cols_lower.get("constraint")
     trace_sup_col  = cols_lower.get("trace support")
 
+    import pandas as pd
+
     def _clean(raw):
+        if pd.isna(raw):
+            return ""
         s = str(raw).strip()
         if s.startswith('[') and s.endswith(']'):
             s = s[1:-1]
         return s.strip().strip("'\"").strip()
 
-    from evaluacion.metrics import _MINERFUL_TO_PM4PY
+    from evaluacion.metrics import _MINERFUL_TO_PM4PY, _PRECEDENCE_LINEAGE
     import re as _re
 
     minerful_sup = {}   # (tmpl_lower, key) -> trace_sup reportado por MINERful
@@ -80,7 +84,12 @@ def main():
         if activation_col and target_col:
             act = _clean(row[activation_col])
             tgt = _clean(row[target_col])
-            key = tgt if not act else (act, tgt)
+            if not act:
+                key = tgt
+            elif tmpl in _PRECEDENCE_LINEAGE:
+                key = (tgt, act)
+            else:
+                key = (act, tgt)
         else:
             args = [a.strip() for a in m.group(2).split(",")]
             key = args[0] if len(args) == 1 else (args[0], args[1])

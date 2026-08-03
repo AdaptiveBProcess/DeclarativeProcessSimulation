@@ -295,22 +295,39 @@ _MINERFUL_TO_PM4PY: Dict[str, str] = {
     # "notsuccession", "notcoexistence", "notchainsuccession", etc. → omitidos
 }
 
-# NOTA (verificado 2026-08-xx contra datos reales de MINERful en este repo y
-# contra el codigo fuente de pm4py `classic.py::__check_alt_succession` /
-# `__check_chain_succession`): el string 'Constraint' de MINERful NO tiene un
-# orden de argumentos consistente entre familias de plantillas — la familia
-# Precedence (Precedence, NotPrecedence, ChainPrecedence, NotChainPrecedence...)
-# escribe el string como Template(Target, Activation) mientras que la familia
-# Response/Succession lo escribe como Template(Activation, Target). Ejemplo real
-# de este repo: 'Precedence(A_SUBMITTED, A_DECLINED)' con columnas
-# Activation='[A_DECLINED]', Target='[A_SUBMITTED]' — el primer argumento del
-# string es el TARGET, no la activacion. Parsear el string por posicion (como
-# hacia el codigo anterior con _REVERSE_ARGS) adivina mal para toda la familia
-# Precedence. La correccion es usar directamente las columnas 'Activation' y
-# 'Target' que MINERful ya entrega sin ambiguedad — ver _minerful_to_pm4py_model.
-# pm4py en si mismo SI usa un orden uniforme (act_couple[0]=activacion,
-# act_couple[1]=target) para todas las plantillas binarias, incluidas
-# altsuccession/chainsuccession — no requiere ninguna inversion especial.
+# NOTA (verificado 2026-08-03 con diagnostico_conf_por_regla.py — comparando,
+# regla por regla, el Trace support de MINERful contra el que implicitamente
+# mide pm4py al correr apply_list sobre el mismo log): usar las columnas
+# 'Activation'/'Target' de MINERful tal cual, sin invertir nada, funciona
+# perfecto para la familia Response (response, altresponse, chainresponse) y
+# para coexistence (0% de desacuerdo empirico) — pero falla al 100% para TODA
+# la familia Precedence (precedence, altprecedence, chainprecedence) y para
+# succession/altsuccession/chainsuccession (que internamente combinan un check
+# de response con uno de precedence, ver classic.py::__check_alt_succession).
+#
+# Causa: MINERful usa 'Activation' con un significado de "evento que dispara
+# la verificacion" (runtime monitoring), no de "prerequisito". Para Response
+# eso coincide con lo que pm4py espera en act_couple[0] (el evento anterior).
+# Para Precedence, el evento que "dispara la verificacion retrospectiva" es el
+# evento POSTERIOR (B, al ocurrir, dispara "¿ya paso A?") — asi que la columna
+# 'Activation' de MINERful para Precedence contiene el evento posterior B, y
+# 'Target' contiene el prerequisito A. pm4py en cambio siempre espera
+# act_couple[0]=prerequisito, act_couple[1]=consecuente, para todas las
+# plantillas binarias por igual (verificado contra el codigo fuente de pm4py:
+# no hay inversion especial en pm4py mismo). Por eso hay que invertir
+# Activation/Target nosotros, solo para la familia de precedencia — ver
+# _PRECEDENCE_LINEAGE y _minerful_to_pm4py_model.
+#
+# Ejemplo real que expuso el bug (RunningExample, self-check de CONF):
+# altprecedence con Activation='EVENT 7 END' (el evento FINAL del proceso),
+# Target='EVENT 1 START' (el evento INICIAL) — leido tal cual sin invertir,
+# pm4py interpreta "EVENT 1 START solo puede ocurrir si EVENT 7 END ya
+# ocurrio", imposible por construccion → 100% de las trazas "violan" una
+# regla que en realidad se cumple siempre.
+_PRECEDENCE_LINEAGE: set = {
+    "precedence", "altprecedence", "chainprecedence",
+    "succession", "altsuccession", "chainsuccession",
+}
 
 
 def _df_to_xes_cols(df: pd.DataFrame) -> pd.DataFrame:
@@ -419,6 +436,12 @@ def _minerful_to_pm4py_model(rules_df: pd.DataFrame, support_threshold: float = 
             "confiable para la familia Precedence, ver comentario arriba).")
 
     def _clean_activity(raw) -> str:
+        # Celdas vacias de 'Activation' (plantillas unarias) llegan como NaN
+        # (float) desde pandas — sin este chequeo, str(nan) == 'nan' (un
+        # string NO vacio) y el codigo de mas abajo trata la regla como
+        # binaria por error (bug confirmado con 'init' en el self-check).
+        if pd.isna(raw):
+            return ""
         s = str(raw).strip()
         if s.startswith('[') and s.endswith(']'):
             s = s[1:-1]
@@ -458,14 +481,18 @@ def _minerful_to_pm4py_model(rules_df: pd.DataFrame, support_threshold: float = 
             model[pm4py_tmpl] = {}
 
         if activation_col is not None and target_col is not None:
-            # Fuente de verdad: columnas Activation/Target de MINERful, sin
-            # ambiguedad de orden entre familias de plantillas.
+            # Fuente de verdad: columnas Activation/Target de MINERful.
             activation = _clean_activity(row[activation_col])
             target     = _clean_activity(row[target_col])
             if not activation:
                 # Plantillas unarias (existence, absence, init, end...): el
                 # unico argumento relevante queda en Target.
                 model[pm4py_tmpl][target] = counts
+            elif pm4py_tmpl in _PRECEDENCE_LINEAGE:
+                # Familia Precedence: la 'Activation' de MINERful es el
+                # evento POSTERIOR (dispara la verificacion retrospectiva),
+                # pero pm4py espera act_couple[0]=prerequisito. Invertir.
+                model[pm4py_tmpl][(target, activation)] = counts
             else:
                 model[pm4py_tmpl][(activation, target)] = counts
         else:
