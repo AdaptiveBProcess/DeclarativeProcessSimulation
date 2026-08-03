@@ -506,3 +506,53 @@ recomendada de aquí en adelante es `GANTrainerV2`/`transformer_wgan`.
 4. Mismos pendientes de §8 que seguían abiertos: métrica de novedad/diversidad,
    verificación por ejecución real del fix de CONF (§10.3), submódulo `GenerativeLSTM`
    sin commitear.
+
+---
+
+## 12. Cambio de flujo de trabajo — Documents es ahora el repo principal (2026-08-03)
+
+**A partir de ahora, Claude Code trabaja sobre
+`C:\Users\Diego\Documents\GitHub\Asistencia-graduada\Declarative_final\DeclarativeProcessSimulation`
+(sin OneDrive), no sobre la copia de OneDrive.** La copia de OneDrive sigue existiendo
+y sincronizada con `origin/gan-module` (por si se necesita consultar), pero ya no es
+donde se hacen cambios activos — evita repetir la mecánica de reconciliación de §11.
+
+### 12.1 Primer resultado real de `GANTrainerV2` sobre `RunningExample`
+
+El usuario corrió `python dg_training.py -m transformer_wgan` +
+`python dg_prediction.py` (10 réplicas, resumen automático) ya con el dataset
+correctamente alineado. Resultado:
+
+| Métrica | Referencia V4 (tabla §5) | Corrida real (media, 10 réplicas) | Lectura |
+|---|---|---|---|
+| CTD | 2.093 s (0,58 h) | 1.893 s (0,53 h) | Prácticamente igual, incluso mejor |
+| 2GD | 0,1273 | 0,1325 | Prácticamente igual |
+| RED | 0,0202 (escala **[0,1]**, definición temporal — ver §11.2) | 2,71 (escala **[0,100]**, definición ordinal actual) | **Escalas distintas, no comparables directamente** — normalizando ambas a "% de discrepancia posicional" (0,0202→2,02% vs 2,71→2,71%), son magnitudes muy similares. No hay evidencia de degradación real. |
+| CONF | 87,90% | 48,7% (std=0,24pp entre las 10 réplicas — muy estable) | **Único resultado que sí preocupa** — ver §12.2 |
+
+**Conclusión parcial**: 3 de 4 métricas confirman que el pipeline (dataset +
+`GANTrainerV2`) está funcionando correctamente y a la altura de la referencia. CONF
+es la excepción y requiere diagnóstico aparte antes de sacar conclusiones sobre la
+calidad del generador.
+
+### 12.2 CONF bajo — hipótesis y verificación en curso
+
+Argumento a favor de sospechar del **cálculo** de CONF (no del generador): 2GD (que
+depende de la misma estructura de orden de actividades en la que se basan la mayoría
+de plantillas DECLARE) está casi calcado a la referencia. Sería raro que el generador
+capture bien la estructura de bigramas pero falle drásticamente en conformidad de
+reglas derivadas de esa misma estructura.
+
+**Diagnóstico propuesto y en curso**: self-check de CONF — comparar
+`test_split.csv` contra sí mismo. Como las reglas se minan exigiendo soporte≥90%
+sobre ese mismo log, el resultado debería acercarse a ~90%+ casi por construcción.
+Si sale bajo también, confirma un problema en el cálculo (posiblemente relacionado
+con el fix de `Activation`/`Target` de §10.3, o algo distinto); si sale cerca de 90%,
+el 48,7% del GAN es un resultado real del generador a investigar por otro lado.
+
+Script: `verificar_conf_selfcheck.py` (raíz del repo, en la carpeta de Documents —
+no comitear la copia de OneDrive si reaparece). Ejecutar con:
+```
+python verificar_conf_selfcheck.py
+```
+**Estado: pendiente de que el usuario lo corra y comparta el resultado.**
