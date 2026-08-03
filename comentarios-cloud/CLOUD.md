@@ -2,7 +2,10 @@
 
 > Contexto persistente para Claude Code sobre el trabajo hecho en esta rama.
 > Leer completo al inicio de cada sesión que retome este tema.
-> Última actualización: 2026-08-02.
+> Última actualización: 2026-08-03.
+> **LEER PRIMERO §11** — invalida partes de §4/§5/§10: apareció el código real
+> de V2-V6 (nunca comiteado, vivía sin commitear en una segunda carpeta local del
+> usuario) y cambia el diagnóstico de degradación de métricas.
 
 ---
 
@@ -386,3 +389,120 @@ Ambos ya apuntan a `RunningExample.csv` por defecto. Salidas esperadas:
 Con 1000 epochs, `n_critic=5` y ~378 trazas de train (70% de 540), el entrenamiento
 en CPU debería tomar de minutos a un par de horas — no se ha medido el tiempo real
 porque Claude Code no puede ejecutar esta corrida.
+
+---
+
+## 11. GIRO IMPORTANTE (sesión 2026-08-03) — apareció el código real de V2-V6, y el diagnóstico de "degradación" cambia por completo
+
+### 11.1 Contexto: dos carpetas locales del mismo repo
+
+El usuario trabaja con **dos clones locales** del mismo remoto:
+- `C:\Users\Diego\OneDrive\Documents\GitHub\...` — donde Claude Code opera (sincronizada
+  con OneDrive; ya vimos en §2 que esto causa interferencia con `.git`).
+- `C:\Users\Diego\Documents\GitHub\...` — **sin OneDrive**, donde el usuario ejecuta
+  manualmente `dg_training.py`/`dg_prediction.py` en el venv `deep_generator` y
+  normalmente comitea desde ahí.
+
+El 2026-08-03 se descubrió que la segunda carpeta tenía **~1.480 líneas de trabajo sin
+comitear desde julio 2026**, nunca sincronizadas con `origin` ni con la carpeta de
+OneDrive. Eso invalida el hallazgo de §4 ("V2-V6 nunca se guardaron en ningún commit")
+en su interpretación literal — sí existían, solo que nunca llegaron a git.
+
+### 11.2 Qué había ahí — el V4 real
+
+- `GenerativeGAN/model_training/gan_trainer_v2.py` (`GANTrainerV2`, Jul 8) +
+  `GenerativeGAN/model_training/models/model_wgan_transformer.py` (Jul 6): Transformer +
+  Time2Vec + WGAN-GP real, **con soporte para las pérdidas auxiliares de bigrama/cycle-time**
+  (`bg_lambda`/`ct_lambda`, con relajación suave vía softmax — detalle de implementación
+  que no estaba en la tabla de hiperparámetros). Confirmado como la fuente real de la
+  tabla V1-V6: `dg_training.py` (esa carpeta) tenía el comentario textual
+  `# Configuracion v4 CPU — mejor iteracion (RED=0.020, CTD=2093s, CONF=87.90%)` con
+  exactamente los hiperparámetros de §5.
+- `dg_prediction.py` mejorado: `_run_gan_pipeline` ahora corre **10 réplicas** de
+  generación y guarda `metrics_runs_<run_id>.csv` + `metrics_summary_<run_id>.csv`
+  (media/std/min/max) — así es como se produce la tabla que reporta el usuario.
+- `GenerativeGAN/model_prediction/gan_predictor.py` mejorado: generación en batch (32
+  trazas por llamada al modelo, antes era una por una), guardas NaN/Inf en el
+  reescalado, y carga por `SavedModel` (directorio) en vez de `.h5` — diseñado a
+  propósito para no necesitar registrar `custom_objects`.
+- `evaluacion/metrics.py`: **redefine RED** — de posición temporal relativa (escala
+  [0,1], la que verificamos en §10) a posición **ordinal** `(índice/longitud)*100`
+  (escala [0,100]). Métrica distinta, no comparable numéricamente con la que dejamos
+  en gan-module. **No se pudo confirmar con cuál definición se obtuvo el RED=0.020 de
+  referencia** — es una pregunta abierta, ver §11.5.
+- El bug de CONF (`Activation`/`Target`, §10.3) **no estaba corregido aquí tampoco** —
+  confirmado que es una mejora genuina, independiente de cuál arquitectura se use.
+
+### 11.3 El verdadero diagnóstico de la "degradación" reportada
+
+El usuario compartió métricas (RED=0,686, CTD=791h, 2GD=0,964, CONF=56,15%) pidiendo
+diagnosticar por qué eran peores que el V4 de referencia. El diagnóstico inicial
+(§10, basado en el log de consola `[GAN] epoch 0000/200 | D: 0.6927...`) identificó
+correctamente que corrió la arquitectura V1 vieja, no V4. Pero investigando el
+`model_parameters.json` real de esa corrida (`data/1.predicton_models/bpic2012_a/
+20260802_.../parameters/model_parameters.json`) aparecieron **dos problemas más**,
+independientes de cuál arquitectura se use:
+
+1. **Dataset distinto al de referencia**: la corrida fue sobre **BPI Challenge 2012**
+   (`model_type=simple_gan`, actividades `A_ACCEPTED-COMPLETE`, `W_Afhandelen leads-...`),
+   no sobre `RunningExample`. Comparar el CTD de esa corrida contra el CTD=2093s de la
+   tabla no es válido — son procesos con escalas de tiempo completamente distintas
+   (BPIC2012 AS-IS tiene cycle time real de ~78 días según el `CLAUDE.md` del Paper 1).
+2. **Bug de preprocesamiento específico de `bpic2012_a`**: `scale_args.dur.max_value=0.0`
+   en ese `model_parameters.json`. Con `norm_method=max`, `_rescale()` multiplica por
+   `max_value` — si es 0, **toda duración generada se reescala a 0 segundos**,
+   sin importar qué tan bien entrenado esté el generador. Y `wait.max_value≈102,8 días`
+   con `max_trace_size=175` explica por sí solo un CTD del orden de cientos de horas,
+   sin necesidad de invocar mode collapse.
+3. Ningún archivo de métricas guardado en disco (`metrics_summary_20260715_040225.csv`,
+   `..._085024.csv`, `..._20260802_135044.csv` — este último es el que coincide con lo
+   que reportó el usuario) tiene un RED cercano a 0,020. El origen exacto del número de
+   referencia de la tabla sigue sin confirmarse en un artefacto guardado.
+
+**Conclusión: no hay evidencia de que V4 sea peor que V1. La comparación que se hizo
+no era válida — arquitectura, dataset, y una escala de normalización rota, los tres a
+la vez.**
+
+### 11.4 Qué se hizo para reconciliar (mecánica de git, para referencia futura)
+
+1. Commit de resguardo en la carpeta sin OneDrive (`e7d690a`) con todo lo no
+   comiteado, **antes** de traer nada de `origin` — para no arriesgar perder ese
+   trabajo si el merge salía mal.
+2. `git fetch` + `git merge origin/gan-module`. Auto-merge limpio en `dg_training.py`
+   y `evaluacion/metrics.py`; conflicto real solo en `gan_predictor.py`.
+3. El conflicto de `gan_predictor.py` **no se resolvió "eligiendo un lado"**: mi
+   `model_simple_gan.py` y su `model_wgan_transformer.py` cada uno define su propia
+   clase `Time2Vec`/`TransformerBlock` con firmas distintas (`dim` vs `output_dim`).
+   Registrarlas juntas bajo la misma clave de `custom_objects` haría que una
+   sobreescribiera a la otra. Se resolvió separando por **formato de guardado**:
+   `SavedModel` (directorio, `GANTrainerV2`/`transformer_wgan`) → sin `custom_objects`
+   (como se diseñó originalmente); `.h5` (`GANTrainer`/`simple_gan`) → con las
+   `CUSTOM_OBJECTS` de `model_simple_gan.py`.
+4. Merge commit `c81f8e8`, pusheado a `origin/gan-module`.
+5. Dataset realineado a `RunningExample` en los 3 scripts que estaban desincronizados
+   entre sí (`dg_training.py` tenía `bpic2012_a.csv`, `dg_prediction.py` también,
+   `dg_boxplot.py` ya tenía `RunningExample` hardcodeado).
+6. Carpeta de OneDrive actualizada por fast-forward al mismo commit — las dos carpetas
+   locales y `origin/gan-module` quedan sincronizadas en `c81f8e8`.
+
+**No se borró ni descartó nada** — `model_simple_gan.py`/`gan_trainer.py` (mi
+reconstrucción V4 bajo `simple_gan`) quedan como ruta secundaria sin usar; la ruta
+recomendada de aquí en adelante es `GANTrainerV2`/`transformer_wgan`.
+
+### 11.5 Pendientes abiertos
+
+1. **Confirmar el origen del RED=0,020 de referencia** — ¿con la definición temporal
+   (0-1) o la ordinal (0-100)? Ninguna corrida guardada en disco lo aclara. Si
+   aparece un artefacto viejo (notebook, captura de consola) que lo confirme, hay que
+   actualizar este archivo.
+2. **Reentrenar sobre `RunningExample` con `GANTrainerV2`** ahora que todo está
+   alineado: `python dg_training.py -m transformer_wgan` (usa las mismas
+   configuraciones "V4 CPU" ya hardcodeadas en el bloque `elif model_family ==
+   'transformer_wgan':` de `dg_training.py`) seguido de `python dg_prediction.py`.
+   Esta sí sería una comparación válida contra la tabla de §5.
+3. El bug de `dur.max_value=0.0` es específico del preprocesamiento de `bpic2012_a`
+   — no bloquea el punto 2 (que es sobre RunningExample), pero queda pendiente si
+   más adelante se retoma BPIC2012 como dataset objetivo.
+4. Mismos pendientes de §8 que seguían abiertos: métrica de novedad/diversidad,
+   verificación por ejecución real del fix de CONF (§10.3), submódulo `GenerativeLSTM`
+   sin commitear.
