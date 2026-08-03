@@ -12,7 +12,7 @@ CONF - Conformance Score             : conformidad promedio contra reglas DECLAR
 
 Convencion de distancias
 ------------------------
-RED  : valor en [0, 1] (EMD Wasserstein-1 entre distribuciones de posicion relativa), menor es mejor
+RED  : valor en [0, 100] (EMD Wasserstein-1 entre distribuciones de posicion ordinal relativa, en %), menor es mejor
 CTD  : valor en segundos (EMD Wasserstein-1 entre distribuciones de tiempo de ciclo), menor es mejor
 2GD  : valor en [0, 1] (TVD = EMD con coste unitario categorico), menor es mejor
 CONF : valor en [0, 1], MAYOR es mejor
@@ -143,39 +143,34 @@ def compute_red(df_ref: pd.DataFrame, df_sim: pd.DataFrame) -> float:
     """
     Relative Event Distribution (RED).
 
-    Para cada evento dentro de cada traza, calcula en que porcentaje del
-    tiempo de vida total de la traza ocurrio ese evento:
+    Para cada evento en cada traza, calcula su posicion ordinal relativa
+    expresada como porcentaje de la longitud de la traza:
 
-        pos_relativa = (timestamp_evento - inicio_traza) / (fin_traza - inicio_traza)
+        pos_relativa = (indice_ordinal / longitud_traza) * 100
 
-    El resultado es un valor en [0, 1]:  0% = al inicio de la traza, 100% = al final.
+    donde indice_ordinal va de 0 (primer evento) a L-1 (ultimo evento)
+    y longitud_traza = L = numero de eventos en la traza.
 
-    Se recogen TODOS los porcentajes de TODOS los eventos de TODAS las trazas
-    del log, se construye una distribucion y se aplica EMD (Wasserstein-1)
-    para comparar la distribucion del log de referencia vs el simulado.
+    Los valores resultantes estan en [0, 100] (% de posicion en la traza).
+    Se recogen todos los valores de todos los eventos de todos los casos,
+    se construye una distribucion y se aplica EMD (Wasserstein-1) entre
+    la distribucion del log de referencia y la del log simulado.
 
-    Resultado en [0, 1] (menor = distribuciones de posicion relativa mas similares).
+    Esta definicion es compatible con Graziosi et al. (2024) / Camargo et al.,
+    y permite comparacion directa de valores numericos entre trabajos.
 
-    Referencia: Graziosi et al. (2024), Sec. RED.
+    Resultado en [0, 100] (menor = distribuciones de posicion mas similares).
     """
     def _relative_positions(df: pd.DataFrame) -> np.ndarray:
         sort_col = "start_timestamp" if "start_timestamp" in df.columns else "end_timestamp"
-        end_col  = "end_timestamp"   if "end_timestamp"   in df.columns else sort_col
 
         positions: List[float] = []
-        for _, grp in df.groupby("caseid", sort=False):
-            trace_start = grp[sort_col].min()
-            trace_end   = grp[end_col].max()
-            cycle_secs  = (trace_end - trace_start).total_seconds()
-
-            if cycle_secs <= 0:
-                # Traza de un unico instante: todos los eventos en posicion 0
-                positions.extend([0.0] * len(grp))
+        for _, grp in df.sort_values(sort_col).groupby("caseid", sort=False):
+            L = len(grp)
+            if L == 0:
                 continue
-
-            for ts in grp[sort_col]:
-                rel = (ts - trace_start).total_seconds() / cycle_secs
-                positions.append(float(np.clip(rel, 0.0, 1.0)))
+            for k in range(L):
+                positions.append((k / L) * 100.0)
 
         return np.array(positions, dtype=float)
 

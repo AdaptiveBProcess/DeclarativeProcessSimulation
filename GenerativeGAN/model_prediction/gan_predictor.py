@@ -28,52 +28,85 @@ class GANPredictor:
     # ── Core generation loop ──────────────────────────────────────────────────
 
     def _generate_traces(self, parms, model_path):
-        model = load_model(model_path, custom_objects={'mae': keras_mae})
-        latent_dim = int(parms.get('latent_dim', 100))
-        n_ac = len(parms['index_ac'])
-        n_rl = len(parms['index_rl'])
-        num_cases = parms['num_cases']
-        num_digits = len(str(num_cases))
-        event_log = []
+        if os.path.isdir(model_path):
+            model = load_model(model_path)
+        else:
+            try:
+                from GenerativeGAN.model_training.models.model_wgan_transformer import (
+                    Time2Vec, TransformerBlock)
+                custom_objs = {
+                    'mae': keras_mae,
+                    'Time2Vec': Time2Vec,
+                    'TransformerBlock': TransformerBlock,
+                }
+            except ImportError:
+                custom_objs = {'mae': keras_mae}
+            model = load_model(model_path, custom_objects=custom_objs)
 
-        # Over-sample to reach the required count after rule filtering
-        for i in tqdm(range(num_cases * 5), desc='GAN generating traces'):
-            df_generated, files_gen = te.get_stats_log_traces(
-                parms['traces_gen_path'])
+        latent_dim  = int(parms.get('latent_dim', 100))
+        n_ac        = len(parms['index_ac'])
+        n_rl        = len(parms['index_rl'])
+        num_cases   = parms['num_cases']
+        num_digits  = len(str(num_cases))
+        target_prop = parms['new_prop_cases']
 
-            if len(files_gen) >= parms['len_log']:
-                break
+        # Proporcion inicial estimada a partir del split de entrenamiento
+        init_pos = int(parms.get('pos_cases_org', 0))
+        init_n   = int(parms.get('total_cases_org', 1)) or 1
 
-            case_id = f'Case{str(i).zfill(num_digits)}'
-            noise = np.random.normal(0, 1, (1, latent_dim)).astype(np.float32)
-            raw = model.predict(noise, verbose=0)[0]  # (max_trace_size, feat_dim)
+        # Contadores en memoria — elimina la lectura O(n^2) de CSVs individuales
+        n_accepted  = 0   # trazas aceptadas en total
+        n_cond      = 0   # trazas aceptadas que satisfacen la condicion
+        event_log   = []
 
-            trace = self._decode_trace(raw, case_id, parms, n_ac, n_rl)
-            if not trace:
-                continue
+        # Inferencia en batch: una sola llamada al modelo genera BATCH trazas,
+        # mucho mas rapido que llamadas individuales (especialmente en CPU).
+        BATCH = 32
+        max_candidates = num_cases * 10  # presupuesto maximo de candidatos
 
-            df_trace = pd.DataFrame(trace)
-            cond = te.evaluate_condition(
-                df_trace, parms['ac_index'],
-                parms['rules']['path'], parms['rules']['rule'])
+        pbar = tqdm(total=num_cases, desc='GAN generating traces')
+        i = 0
+        while n_accepted < num_cases and i < max_candidates:
+            b = min(BATCH, max_candidates - i)
+            noise     = np.random.normal(0, 1, (b, latent_dim)).astype(np.float32)
+            raw_batch = model.predict(noise, verbose=0)  # (b, max_trace_size, feat_dim)
 
-            current_prop = self._current_proportion(
-                df_generated, files_gen, parms)
+            for j, raw in enumerate(raw_batch):
+                if n_accepted >= num_cases:
+                    break
 
-            target = parms['new_prop_cases']
-            at_target = (
-                abs((current_prop - target) / max(target, 1e-9)) <= 0.05
-                and len(files_gen) >= parms['len_log'])
-            if at_target:
-                break
+                case_id = f'Case{str(i + j).zfill(num_digits)}'
+                trace   = self._decode_trace(raw, case_id, parms, n_ac, n_rl)
+                if not trace:
+                    continue
 
-            if cond and current_prop <= target:
-                event_log.extend(trace)
-                self._save_trace(df_trace, case_id, parms)
-            elif not cond and current_prop >= target:
-                event_log.extend(trace)
-                self._save_trace(df_trace, case_id, parms)
+                df_trace = pd.DataFrame(trace)
+                cond = te.evaluate_condition(
+                    df_trace, parms['ac_index'],
+                    parms['rules']['path'], parms['rules']['rule'])
 
+                # Proporcion actual: mezcla del prior de entrenamiento con
+                # los casos generados hasta ahora
+                total_seen   = init_n + n_accepted
+                cond_seen    = init_pos + n_cond
+                current_prop = cond_seen / max(total_seen, 1)
+
+                if cond and current_prop <= target_prop:
+                    event_log.extend(trace)
+                    n_accepted += 1
+                    n_cond     += 1
+                    pbar.update(1)
+                elif not cond and current_prop >= target_prop:
+                    event_log.extend(trace)
+                    n_accepted += 1
+                    pbar.update(1)
+
+            i += b
+
+        pbar.close()
+        achieved = n_cond / max(n_accepted, 1)
+        print(f'[GAN] {n_accepted} trazas aceptadas | '
+              f'{n_cond} conformes ({achieved:.2%}) | objetivo {target_prop:.2%}')
         return event_log
 
     # ── Trace decoding ────────────────────────────────────────────────────────
@@ -116,12 +149,14 @@ class GANPredictor:
             if role in ('start', 'end'):
                 role = 'UNKNOWN'
 
-            dur = max(self._rescale(
+            dur_raw = self._rescale(
                 dur_norm, parms['scale_args'].get('dur', {}),
-                parms['norm_method']), 0.0)
-            wait = max(self._rescale(
+                parms['norm_method'])
+            wait_raw = self._rescale(
                 wait_norm, parms['scale_args'].get('wait', {}),
-                parms['norm_method']), 0.0)
+                parms['norm_method'])
+            dur  = 0.0 if (np.isnan(dur_raw)  or np.isinf(dur_raw))  else max(dur_raw,  0.0)
+            wait = 0.0 if (np.isnan(wait_raw) or np.isinf(wait_raw)) else max(wait_raw, 0.0)
 
             start_ts = s_ts + pd.Timedelta(seconds=wait)
             end_ts = start_ts + pd.Timedelta(seconds=dur)
@@ -168,14 +203,19 @@ class GANPredictor:
         if norm_method == 'lognorm':
             max_v = scale_args.get('max_value', 1.0)
             min_v = scale_args.get('min_value', 0.0)
+            if max_v == min_v:
+                return float(np.expm1(min_v))
             value = (value * (max_v - min_v)) + min_v
-            return float(np.expm1(value))
+            result = float(np.expm1(value))
+            return 0.0 if (np.isnan(result) or np.isinf(result)) else result
         elif norm_method == 'max':
             max_v = scale_args.get('max_value', 1.0)
             return float(np.rint(value * max_v))
         elif norm_method == 'normal':
             max_v = scale_args.get('max_value', 1.0)
             min_v = scale_args.get('min_value', 0.0)
+            if max_v == min_v:
+                return float(min_v)
             return float((value * (max_v - min_v)) + min_v)
         elif norm_method == 'standard':
             mean = scale_args.get('mean', 0.0)

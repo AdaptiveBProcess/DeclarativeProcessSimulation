@@ -13,6 +13,7 @@ from support_modules.predictor_adapter import get_latest_output_folder
 # from get_folder import ReturnFolderName
 from GenerativeLSTM.model_training import model_trainer as tr
 from GenerativeGAN.model_training.gan_trainer import GANTrainer
+from GenerativeGAN.model_training.gan_trainer_v2 import GANTrainerV2
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
@@ -178,7 +179,7 @@ def parse_args(argv, filename=''):
 
 
 def main(argv):
-    FILENAME = 'RunningExample.csv'
+    FILENAME = 'bpic2012_a.csv'
     NAME = FILENAME.split('.')[0]
     args = parse_args(argv,filename=FILENAME)
 
@@ -213,7 +214,8 @@ def main(argv):
         'gru': ['shared_cat_gru', 'concatenated_gru'],
         'lstm_cx': ['shared_cat_cx', 'concatenated_cx'],
         'gru_cx': ['shared_cat_gru_cx', 'concatenated_gru_cx'],
-        'simple_gan': ['simple_gan']
+        'simple_gan':       ['simple_gan'],
+        'transformer_wgan': ['transformer_wgan'],
     }
     model_family = args['model_family']
     parameters['model_type'] = model_type_map.get(model_family, [])
@@ -240,14 +242,31 @@ def main(argv):
     os.makedirs(f'data/1.predicton_models/{NAME}', exist_ok=True)
     os.makedirs(f'data/4.simulation_results/{NAME}/metricas', exist_ok=True)
     output_folder = f'data/1.predicton_models/{NAME}'
+    split_config = {
+        'rules_path':     f'data/0.logs/{NAME}/rules.ini',
+        'test_save_path': f'data/4.simulation_results/{NAME}/metricas/test_split.csv',
+    }
+
     if model_family == 'simple_gan':
-        # 70/10/20 chronological split: train+val → GAN training, test → reference
-        parameters['split_config'] = {
-            'rules_path': f'data/0.logs/{NAME}/rules.ini',
-            'test_save_path': (
-                f'data/4.simulation_results/{NAME}/metricas/test_split.csv'),
-        }
+        parameters['split_config'] = split_config
         GANTrainer(parameters, input_folder=train_folder, output_folder=output_folder)
+
+    elif model_family == 'transformer_wgan':
+        # Configuracion v4 CPU — mejor iteracion (RED=0.020, CTD=2093s, CONF=87.90%)
+        parameters['norm_method']  = 'lognorm'
+        parameters['latent_dim']   = 64
+        parameters['epochs']       = 1000
+        parameters['n_critic']     = 5
+        parameters['batch_size']   = 32
+        parameters['d_model']      = 64
+        parameters['num_heads']    = 4
+        parameters['ff_dim']       = 256
+        parameters['num_blocks']   = 3
+        parameters['dropout']      = 0.1
+        parameters['time2vec_dim'] = 16
+        parameters['split_config'] = split_config
+        GANTrainerV2(parameters, input_folder=train_folder, output_folder=output_folder)
+
     else:
         tr.ModelTrainer(parameters, input_folder=train_folder, output_folder=output_folder)
     print(get_latest_output_folder("data/1.predicton_models"))

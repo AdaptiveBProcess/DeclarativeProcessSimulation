@@ -318,42 +318,75 @@ def call_predict_gan(model_params, routes, params, model_folder_path):
         print('[GAN] Advertencia: no se generaron trazas.')
 
 
-def _run_gan_pipeline(model_params, routes, params, model_folder_path, run_id):
-    """Pipeline GAN: generacion + evaluacion de metricas vs test split."""
-    call_predict_gan(model_params, routes, params, model_folder_path)
+def _run_gan_pipeline(model_params, routes, params, model_folder_path, run_id, n_runs=10):
+    """Pipeline GAN: n_runs generaciones + evaluacion de metricas vs test split.
 
+    Genera n_runs logs sinteticos independientes y los evalua en batch contra
+    el split de test. MINERful se ejecuta una sola vez para todas las corridas.
+    Guarda metrics_runs_<run_id>.csv (corridas individuales) y
+    metrics_summary_<run_id>.csv (media, std, min, max).
+    """
     test_split_path = routes['simulation'] / 'metricas' / 'test_split.csv'
-    generated_path  = routes['hallucinated'] / params.log_filename
     metricas_path   = routes['simulation'] / 'metricas'
 
     if not test_split_path.exists():
         print(f'[Metrics] test_split.csv no encontrado: {test_split_path}')
-        print('[Metrics] Ejecuta primero dg_training.py con simple_gan.')
+        print('[Metrics] Ejecuta primero dg_training.py con transformer_wgan.')
         return
 
-    if not generated_path.exists():
-        print(f'[Metrics] Log generado no encontrado: {generated_path}')
+    log_stem = Path(params.log_filename).stem    # e.g. "RunningExample"
+    log_ext  = Path(params.log_filename).suffix  # e.g. ".csv"
+    base_log = routes['hallucinated'] / params.log_filename
+
+    # ── Fase 1: generar n_runs logs con nombres unicos ────────────────────────
+    generated_paths = []
+    for i in range(1, n_runs + 1):
+        print(f'\n[GAN] ── Corrida {i}/{n_runs} ──')
+        call_predict_gan(model_params, routes, params, model_folder_path)
+
+        if not base_log.exists():
+            print(f'[GAN] Corrida {i}: log no generado, omitiendo.')
+            continue
+
+        run_path = routes['hallucinated'] / f'{log_stem}_run{i:02d}{log_ext}'
+        shutil.move(str(base_log), str(run_path))
+        generated_paths.append(str(run_path))
+
+    if not generated_paths:
+        print('[Metrics] No se genero ningun log valido.')
         return
 
-    from evaluacion.evaluator import evaluate
-    results = evaluate(
+    # ── Fase 2: evaluar todos los logs (MINERful se ejecuta UNA SOLA VEZ) ────
+    from evaluacion.evaluator import evaluate_batch
+    print(f'\n[Metrics] Evaluando {len(generated_paths)} logs generados ...')
+    df_all = evaluate_batch(
         ref_path=str(test_split_path),
-        sim_path=str(generated_path),
+        sim_paths=generated_paths,
         support_threshold=0.90,
-        verbose=True,
     )
-    df_results = pd.DataFrame([results])
-    df_results.insert(0, 'run_id', run_id)
-    df_results.insert(1, 'model_type', 'simple_gan')
-    out_csv = metricas_path / f'metrics_{run_id}.csv'
-    df_results.to_csv(str(out_csv), index=False)
-    print(f'[Metrics] Resultados guardados: {out_csv}')
+    df_all.insert(0, 'run_id', run_id)
+    df_all.insert(1, 'model_type', model_params.get('model_type', 'transformer_wgan'))
+    df_all.insert(2, 'corrida', list(range(1, len(df_all) + 1)))
+
+    out_csv = metricas_path / f'metrics_runs_{run_id}.csv'
+    df_all.to_csv(str(out_csv), index=False)
+    print(f'[Metrics] Corridas individuales guardadas: {out_csv}')
+
+    # ── Fase 3: resumen estadistico ───────────────────────────────────────────
+    metric_cols = [c for c in ['RED', 'CTD', 'CTD_horas', '2GD', 'CONF'] if c in df_all.columns]
+    df_summary = df_all[metric_cols].agg(['mean', 'std', 'min', 'max'])
+    out_summary = metricas_path / f'metrics_summary_{run_id}.csv'
+    df_summary.to_csv(str(out_summary))
+
+    print(f'\n[Metrics] ── Resumen de {len(generated_paths)} corridas ──')
+    print(df_summary.to_string())
+    print(f'[Metrics] Resumen guardado: {out_summary}')
 
 
 def main(argv):
     params = Params(
         root=Path(argv[0]) if argv else Path(),
-        log_filename="RunningExample.csv",
+        log_filename="bpic2012_a.csv",
         hallucination_cases=50,  # primera prueba: verificar generación
         tobe_cases=50,           # primera prueba: simulación liviana
     )
@@ -382,7 +415,7 @@ def main(argv):
             model_params_json = json.load(f)
         model_type = model_params_json.get('model_type', 'lstm')
 
-    if model_type == 'simple_gan':
+    if model_type in ('simple_gan', 'transformer_wgan'):
         _run_gan_pipeline(model_params_json, r, params, model_folder_path, run_id)
         return
 
