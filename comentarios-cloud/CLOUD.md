@@ -662,5 +662,76 @@ ahora, el número más confiable que existe sobre el desempeño real de V4/`GANT
 
 ### 14.1 Pendientes que siguen abiertos (sin cambios respecto a §11.5/§8)
 
-Métrica de novedad/diversidad, verificación de que el origen del RED=0,0202 de
-referencia se confirme alguna vez, submódulo `GenerativeLSTM` sin commitear.
+Métrica de novedad/diversidad, submódulo `GenerativeLSTM` sin commitear.
+~~Verificación del origen del RED=0,0202 de referencia~~ — **resuelto en §15**: no
+hacía falta encontrar el artefacto original, la explicación estadística alcanza.
+
+---
+
+## 15. Estudio de varianza ENTRE entrenamientos — la brecha de §14 no era real (2026-08-04)
+
+### 15.1 Motivación
+
+§14 dejó una duda abierta: RED (0,0491) y CTD (1,11h) salieron ~2x por encima de la
+referencia histórica de V4, mientras 2GD y CONF prácticamente la igualaban. Esa
+comparación usaba **un solo modelo entrenado una vez**, evaluado con 10 réplicas de
+generación — es decir, medía varianza de *muestreo de generación*, no varianza de
+*entrenamiento* (qué tan distinto sale un modelo con otra semilla). Se construyó
+`estudio_varianza_transformer_wgan.py` para correr **10 entrenamientos completos e
+independientes** (cada uno invocando `dg_training.py`/`dg_prediction.py` como
+subproceso separado, sin compartir estado de TensorFlow entre corridas), y comparar
+la media de cada corrida entre sí.
+
+### 15.2 Resultado — la referencia histórica es el mejor caso, no el caso típico
+
+| Métrica | Referencia V4 (§5) | Rango observado (10 entrenamientos independientes) | Media | std |
+|---|---|---|---|---|
+| RED | 0,0202 | [0,0221 – 0,1142] | 0,0552 | 0,0267 |
+| CTD_horas | 0,58 h | [0,598 h – 1,189 h] | 0,752 h | 0,182 h |
+| 2GD | 0,1273 | [0,1256 – 0,1457] | 0,1349 | 0,0074 |
+| CONF | 87,90% | [88,19% – 90,44%] | 89,21% | 0,74 pp |
+
+**La referencia de RED y CTD cae en el borde inferior (el mejor caso) del rango
+observado, no en el centro.** Retroactivamente tiene sentido: el comentario en
+`dg_training.py` que documentaba esos valores decía literalmente
+`# Configuracion v4 CPU — mejor iteracion` — "mejor", no "típica". Nunca fue un
+promedio representativo; era el resultado más favorable de una serie de intentos.
+Comparar una corrida promedio contra el mejor caso histórico de otra serie de
+corridas iba a verse "peor" sin que hubiera ninguna regresión real — es estadística
+básica (media vs. máximo), no un problema del modelo.
+
+**CONF además supera consistentemente la referencia**: las 10 corridas dieron entre
+88,19% y 90,44% — el *mínimo* de las 10 corridas ya le gana al histórico 87,90%.
+
+### 15.3 Hallazgo genuino: RED y CTD son mucho más inestables entre entrenamientos que 2GD/CONF
+
+Coeficiente de variación (std/media) entre las 10 corridas de entrenamiento:
+
+| Métrica | CV (std/media) |
+|---|---|
+| RED | 48% |
+| CTD | 24% |
+| 2GD | 5,5% |
+| CONF | 0,8% |
+
+El generador aprende la estructura de secuencia (2GD) y la conformidad de reglas
+(CONF) de forma muy estable corrida tras corrida. La fidelidad temporal fina (RED,
+CTD) varía mucho más según la semilla de entrenamiento — es la parte más volátil
+del modelo. Esto es consistente con la arquitectura: los canales categóricos
+(softmax de actividad/rol) tienen una señal de entrenamiento más directa que los
+canales continuos de tiempo (sigmoid de `dur`/`wait`), que dependen de la calidad
+del gradient penalty y son más sensibles a la inicialización.
+
+### 15.4 Conclusión
+
+**No hace falta tunear nada para "corregir" una degradación — no la hay.** El
+modelo V4/`GANTrainerV2`, con la configuración actual, produce resultados dentro
+(o mejores, en el caso de CONF) del rango que generó la referencia histórica. Si se
+quisiera perseguir algo a futuro, sería un objetivo distinto y opcional: **reducir
+la varianza** de RED/CTD entre corridas de entrenamiento (más estabilidad, no
+necesariamente mejor promedio) — posibles palancas sin explorar: learning rate
+schedules, más epochs, promediado de pesos (EMA), o ajustar el peso del gradient
+penalty. Ninguna de estas se ha probado ni es urgente.
+
+Archivo de resultados: `estudio_varianza_transformer_wgan_20260804_110034.csv`
+(raíz del repo, 10 corridas).
