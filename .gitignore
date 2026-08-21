@@ -5,6 +5,11 @@ data_results_paper/
 # VS Code project files
 .vscode/
 
+# GenerativeLSTM was absorbed from its own submodule/repo (see git log). Its
+# external_tools/ (SplitMiner, ProConformance2, GraphViz -- ~309MB of
+# third-party .jar binaries, not our code) stays out of history on purpose.
+GenerativeLSTM/external_tools/
+
 # Python bytecode cache
 __pycache__/
 */__pycache__/
