@@ -162,14 +162,20 @@ def parse_args(argv, filename=''):
         'model_family': 'lstm',
         'opt_method': 'bayesian',
         'max_eval': 10,
+        'epochs': 200,
     }
+    # -p controla los epochs por intento de la busqueda bayesiana -- antes estaba
+    # fijo en 200 dentro de `parameters` sin forma de cambiarlo por CLI. Se agrega
+    # para poder correr una prueba rapida (ej. -p 5 -e 2) sin editar el codigo cada
+    # vez, y sin bajar la calidad del entrenamiento por defecto (sigue siendo 200 si
+    # no se pasa -p).
     opt_map = {'-h': 'help', '-f': 'file_name', '-m': 'model_family',
-               '-e': 'max_eval', '-o': 'opt_method'}
+               '-e': 'max_eval', '-o': 'opt_method', '-p': 'epochs'}
     try:
-        opts, _ = getopt.getopt(argv, "h:f:m:e:o:", list(opt_map.values()))
+        opts, _ = getopt.getopt(argv, "h:f:m:e:o:p:", list(opt_map.values()))
         for opt, arg in opts:
             key = opt_map.get(opt, opt.lstrip('--'))
-            defaults[key] = int(arg) if key == 'max_eval' else arg
+            defaults[key] = int(arg) if key in ('max_eval', 'epochs') else arg
     except getopt.GetoptError:
         print("Invalid options.")
         sys.exit(2)
@@ -178,8 +184,8 @@ def parse_args(argv, filename=''):
 
 def main(argv):
     FILENAME = 'BPI_Challenge_2012.csv'
-    NAME = FILENAME.split('.')[0]
     args = parse_args(argv,filename=FILENAME)
+    NAME = args['file_name'].split('.')[0]
 
     parameters = {
         'read_options': {
@@ -199,7 +205,7 @@ def main(argv):
         'batch_size': 32,
         'norm_method': ['max', 'lognorm'],
         'imp': 1,
-        'epochs': 200,
+        'epochs': args['epochs'],
         'n_size': [5, 10, 15],
         'l_size': [50, 100],
         'lstm_act': ['selu', 'tanh'],
@@ -224,7 +230,6 @@ def main(argv):
     input_folder = f'data/0.logs/{NAME}'
     train_folder = preprocess_lifecycle_log(input_folder, parameters['file_name'])
     # train_folder apunta a la carpeta con el CSV preprocesado (o al original si ya estaba listo)
-    # parameters['file_name'] NO cambia → el modelo se sigue llamando RunningExample.h5
 
     # Los embeddings cacheados pueden quedar desactualizados si el vocabulario de actividades
     # o roles cambia (p.ej. al añadir corrección de lifecycle). Se eliminan para que se

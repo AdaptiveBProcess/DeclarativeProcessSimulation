@@ -116,16 +116,16 @@ def run_bimp_docker(bimp_path, bpmn_path, csv_path, path):
     try:
         result = subprocess.run(docker_cmd, stdout=subprocess.PIPE, text=True)
         if result.returncode == 0:
-            print("✅ Simulation was successfully executed")
+            print("[OK] Simulation was successfully executed")
             print(result.stdout)
         elif result.returncode == 1:
             lines = result.stdout.split('\n')
             exception_output = [lines[i - 1] for i in range(len(lines)) if 'BPSimulatorException' in lines[i]]
-            print("❌ Execution failed:", ' '.join(exception_output))
+            print("[FAIL] Execution failed:", ' '.join(exception_output))
         else:
-            print(f"⚠️ Simulation failed with return code: {result.returncode}")
+            print(f"[WARNING] Simulation failed with return code: {result.returncode}")
     except Exception as e:
-        print(f"❌ Error running simulation: {str(e)}")
+        print(f"[FAIL] Error running simulation: {str(e)}")
 
 
 
