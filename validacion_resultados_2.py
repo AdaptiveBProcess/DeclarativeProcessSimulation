@@ -188,7 +188,7 @@ for metrica in metricas:
 df_tabla_final = pd.DataFrame(filas_tabla)
 
 print("\n" + "="*80)
-print(" 📑 TABLA MAESTRA DE RESULTADOS DE EVALUACIÓN")
+print(" TABLA MAESTRA DE RESULTADOS DE EVALUACIÓN")
 print("="*80)
 print(df_tabla_final.to_string(index=False))
 

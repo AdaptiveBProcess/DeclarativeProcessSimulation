@@ -187,7 +187,7 @@ def embed_qbp_simulation(bpmn_path, resources_json_path, bpmn_bimp_path, exclusi
 
         # Write the modified XML to the output file
         tree.write(bpmn_bimp_path, encoding="utf-8", xml_declaration=True)
-        print(f"✅ QBP simulation info embedded into: {bpmn_bimp_path}")
+        print(f"[OK] QBP simulation info embedded into: {bpmn_bimp_path}")
 
     except FileNotFoundError:
         print(f"Error: One of the files not found. BPMN: {bpmn_path}, JSON: {resources_json_path}")

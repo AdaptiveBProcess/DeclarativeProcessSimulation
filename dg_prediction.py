@@ -332,9 +332,9 @@ def main(argv):
     for name, fn in sim_tasks:
         try:
             fn()
-            print(f"✅ {name} completado")
+            print(f"[OK] {name} completado")
         except Exception as e:
-            print(f"❌ {name} falló: {e}")
+            print(f"[FAIL] {name} fallo: {e}")
    
 
 if __name__ == "__main__":
