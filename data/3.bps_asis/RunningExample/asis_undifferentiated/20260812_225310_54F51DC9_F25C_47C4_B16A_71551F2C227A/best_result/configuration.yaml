@@ -1,0 +1,57 @@
+version: 5
+common:
+  train_log_path: /usr/src/Simod/resources/RunningExample.csv.gz
+  test_log_path: null
+  log_ids:
+    case: caseid
+    activity: task
+    resource: user
+    start_time: start_timestamp
+    end_time: end_timestamp
+    enabled_time: enabled_time
+    enabling_activity: enabling_activity
+    available_time: available_time
+    estimated_start_time: estimated_start_time
+    batch_id: batch_instance_id
+    batch_type: batch_instance_type
+  process_model_path: null
+  num_final_evaluations: 0
+  evaluation_metrics: []
+  use_observed_arrival_distribution: false
+  clean_intermediate_files: true
+  discover_data_attributes: true
+preprocessing:
+  multitasking: false
+  enable_time_concurrency_threshold: 0.0
+  concurrency_df: 0.9
+  concurrency_l2l: 0.9
+  concurrency_l1l: 0.9
+control_flow:
+  optimization_metric: two_gram_distance
+  num_iterations: 10
+  num_evaluations_per_iteration: 3
+  gateway_probabilities: discovery
+  mining_algorithm: sm2
+  epsilon: !!python/tuple
+  - 0.05
+  - 0.5
+resource_model:
+  optimization_metric: circadian_event_distribution
+  num_iterations: 5
+  num_evaluations_per_iteration: 3
+  discovery_type: undifferentiated
+  discover_prioritization_rules: false
+  discover_batching_rules: false
+  granularity: 60
+  confidence: !!python/tuple
+  - 0.6
+  - 0.7
+  support: !!python/tuple
+  - 0.05
+  - 0.5
+  participation: 0.4
+extraneous_activity_delays:
+  optimization_metric: RELATIVE_EMD
+  discovery_method: COMPLEX
+  num_iterations: 1
+  num_evaluations_per_iteration: 3
