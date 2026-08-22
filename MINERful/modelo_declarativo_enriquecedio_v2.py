@@ -290,29 +290,6 @@ def generar_analisis_por_traza(df):
     
     return df_final[orden].sort_values(by='variante')
 
-def procesar_modelo_declarativo(ruta_log, ruta_salida, soporte, etiqueta):
-    """
-    Ejecuta MINERful sobre un log específico y valida el resultado.
-    
-    Args:
-        ruta_log (str): Ruta del archivo XES de entrada.
-        ruta_salida (str): Ruta para el CSV de salida.
-        soporte (float): Nivel de soporte para el algoritmo.
-        etiqueta (str): Nombre descriptivo para el log (ej. 'Mejor Caso').
-    """
-    #print(f"\n--- Procesando Modelo: {etiqueta} ---")
-    
-    # Ejecución de la función principal
-    datos = ejecutar_minerful(ruta_log, ruta_salida, soporte)
-    
-    # Validación modular
-    if datos is not None and not datos.empty:
-        #print(f"Éxito: Se encontraron {len(datos)} restricciones para {etiqueta}.")
-        return datos
-    else:
-        print(f"Advertencia: El archivo CSV para {etiqueta} está vacío o no se generó.")
-        return None
-
 def cargar_csvs_de_carpeta(ruta_carpeta):
     """
     Lee todos los archivos .csv de una carpeta específica y los 
@@ -455,91 +432,6 @@ def corregir_lifecycle_incompleto(df: pd.DataFrame) -> pd.DataFrame:
 
 
 
-def generar_modelo_global(df, soporte, ruta_directorio_salida):
-    """
-    Genera el modelo declarativo sobre el log completo, selecciona la regla
-    con mayor support + coverage + confidence (excluyendo Init y End) y la
-    escribe en rules_global.ini en el mismo directorio que rules.ini.
-
-    Args:
-        df (pd.DataFrame): Log de eventos completo ya corregido.
-        soporte (float): Umbral de soporte para MINERful.
-        ruta_directorio_salida (str): Directorio donde se escribirá rules_global.ini
-                                      (mismo que contiene rules.ini).
-    """
-    ruta_xes  = "mi_proceso_global.xes"
-    ruta_csv_minerful = "modelo_descubierto_global.csv"
-
-    # 1. Exportar log completo a XES
-    carga_df_to_format_xes(df.copy(), ruta_xes)
-
-    # 2. Descubrir modelo declarativo sobre el log completo.
-    # Si con el soporte original solo quedan reglas Init/End, se reduce el umbral
-    # progresivamente hasta encontrar reglas con contenido semántico.
-    soportes_fallback = [soporte, 0.1, 0.05, 0.01]
-    df_global = None
-    for sup in soportes_fallback:
-        df_candidato = procesar_modelo_declarativo(ruta_xes, ruta_csv_minerful, sup, "Log Completo")
-        if df_candidato is None or df_candidato.empty:
-            continue
-        df_filtrado = df_candidato[~df_candidato['Constraint'].str.match(r'(?i)^(init|end)\(')].copy()
-        if not df_filtrado.empty:
-            if sup < soporte:
-                print(f"[generar_modelo_global] Soporte reducido a {sup} para obtener reglas no-Init/End.")
-            df_global = df_filtrado
-            break
-
-    if df_global is None or df_global.empty:
-        print("Advertencia: No se encontraron reglas válidas (no Init/End) para el log completo.")
-        return
-
-    # 4. Seleccionar la regla con mayor score combinado
-    df_global['score'] = df_global['Support'] + df_global['Coverage'] + df_global['Confidence']
-    df_global = df_global.sort_values('score', ascending=False).reset_index(drop=True)
-    mejor_regla = df_global['Constraint'].iloc[0]
-    print(f"\nRegla global seleccionada: {mejor_regla}")
-    print(df_global[['Constraint', 'Support', 'Coverage', 'Confidence', 'score']].head(5).to_string(index=False))
-
-    # 5. Convertir a formato declarativo y escribir rules_global.ini
-    mapeo = {
-        "absence": "^{A}",
-        "required": "{A}",
-        "response": "{A} >> * >> {B}",
-        "alternateresponse": "{A} >> {B}",
-        "precedence": "{A} >> | >> {B}",
-        "succession": "{A} >> # >> {B}",
-        "coexistence": "{A} >> + >> {B}",
-        "notchainsuccession": "{A} >> - >> {B}",
-    }
-    match = re.match(r"(\w+)\((.*)\)", mejor_regla)
-    if not match:
-        print("Error: formato de regla no válido.")
-        return
-
-    nombre_funcion = match.group(1).lower()
-    argumentos = [arg.strip() for arg in match.group(2).split(",")]
-    formato = mapeo.get(nombre_funcion)
-    if formato is None:
-        print(f"Error: función '{nombre_funcion}' no mapeada.")
-        return
-
-    if len(argumentos) == 2:
-        path_str = formato.format(A=argumentos[0], B=argumentos[1])
-    elif len(argumentos) == 1:
-        path_str = formato.format(A=argumentos[0], B="")
-    else:
-        path_str = "ERROR_ARGUMENTOS"
-
-    contenido = (
-        "[RULES]\n"
-        f"path = {path_str}\n"
-        "variation = =1"
-    )
-
-    ruta_salida = os.path.join(os.path.normpath(ruta_directorio_salida), "rules_global.ini")
-    with open(ruta_salida, "w", encoding="utf-8") as f:
-        f.write(contenido)
-    print(f"--- Archivo rules_global.ini generado en: {ruta_salida} ---")
 
 
 
