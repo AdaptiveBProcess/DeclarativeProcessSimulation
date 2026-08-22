@@ -20,7 +20,7 @@ preprocessing:
 
 ################
 # Control-flow #
-################ss
+################
 control_flow:
   optimization_metric: two_gram_distance
   num_iterations: 10
@@ -47,6 +47,12 @@ control_flow:
 ##################
 # Resource model #
 ##################
+# discovery_type: undifferentiated (not differentiated) -- a single shared calendar for
+# the whole resource pool instead of one fragmented calendar per individual resource.
+# With `differentiated`, resource calendars come out fragmented into ~1h blocks (median
+# ~16h/week out of 40 possible), which inflates simulated cycle time by roughly 18x
+# relative to the real log. See CLAUDE.md 22.19-22.21 for the full root-cause analysis
+# (RunningExample: simulated PCE 0.97% with `differentiated` vs ~100% with the real log).
 resource_model:
   optimization_metric: circadian_emd
   num_iterations: 5
@@ -54,7 +60,7 @@ resource_model:
   discover_prioritization_rules: false
   discover_batching_rules: false
   resource_profiles:
-    discovery_type: differentiated
+    discovery_type: undifferentiated
     granularity: 60
     confidence:
       - 0.6
@@ -64,9 +70,8 @@ resource_model:
       - 0.5
     participation: 0.4
 
-#####################
-# Extraneous delays #
-#####################
-extraneous_activity_delays:
-  discovery_method: eclipse-aware
-  num_iterations: 1
+# `extraneous_activity_delays` intentionally omitted -- without it, Simod skips
+# discovering/injecting extraneous delays. Keeping it enabled was found to reinject the
+# full trace duration as an "extra delay" on a synthetic marker event with no real
+# resource assigned (e.g. an end-of-process marker), roughly doubling simulated cycle
+# time on top of the `differentiated` calendar issue above. See CLAUDE.md 22.22.
