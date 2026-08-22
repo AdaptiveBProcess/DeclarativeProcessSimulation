@@ -2,13 +2,14 @@
 Parseo de resultados de simulacion Prosimos (`*_prosimos_stats.csv`) y agregacion
 entre replicas.
 
-Extraido de `validacion_resultados_2.py` (las funciones puras, sin efectos
-secundarios) para poder reutilizarlo desde el pipeline nuevo sin arrastrar el codigo
-a nivel de modulo de ese script (que corre analisis sobre rutas absolutas
-hardcodeadas apenas se importa, y fallaria en cualquier maquina donde esas rutas no
-existan). `validacion_resultados_2.py` ahora importa estas mismas funciones de
-vuelta en vez de definirlas inline -- no cambia su comportamiento al correrlo
-standalone.
+Originalmente extraido de `validacion_resultados_2.py` (las funciones puras, sin
+efectos secundarios) para poder reutilizarlo desde el pipeline nuevo sin arrastrar
+el codigo a nivel de modulo de ese script (que corria analisis sobre rutas
+absolutas hardcodeadas apenas se importaba). Ese script quedo con su propia copia
+de estas funciones en vez de importarlas de vuelta, y sus rutas hardcodeadas
+apuntaban a una recoleccion de datos de mayo de 2026 que ya no existe en disco
+-- confirmado no funcional (fallaba con FileNotFoundError apenas se ejecutaba) y
+borrado del repo.
 """
 
 from __future__ import annotations
