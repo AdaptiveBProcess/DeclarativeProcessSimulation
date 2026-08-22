@@ -85,13 +85,8 @@ mkdir -p data/2.input_logs
 mkdir -p data/3.bps_asis
 mkdir -p data/3.bps_tobe
 mkdir -p data/4.simulation_results
+mkdir -p data/5.rule_selection
 
-```
-
-Create the log folder :
-
-```bash
-mkdir -p data/0.logs/<log_name>
 ```
 
 ### Set up docker images
