@@ -735,3 +735,56 @@ penalty. Ninguna de estas se ha probado ni es urgente.
 
 Archivo de resultados: `estudio_varianza_transformer_wgan_20260804_110034.csv`
 (raíz del repo, 10 corridas).
+
+---
+
+## 16. Borrador real del Paper 2 recibido y cruzado contra la implementación (2026-08-06)
+
+El usuario compartió el PDF del borrador: *"Rule-Guided Generative Adversarial Networks
+for Enhanced What-if Process Simulation"* — framework llamado **RULE-GAN**
+(Rule-driven Unseen Log Enhancement GAN). No es un archivo del repo (se compartió como
+adjunto en la conversación), pero queda documentado aquí porque define el marco de
+referencia para todo el trabajo de código de esta rama.
+
+### 16.1 Estructura del borrador
+
+Secciones 1 (Introduction), 2 (Background) y 3 (Related Work) están escritas completas,
+con tabla comparativa (Table 1) contra Fast Synthetic, ProcessGAN, PURPLE, Dynamics[4]
+y CVAE[8]. **Secciones 4 (Proposed Approach), 5 (Implementation), 6 (Experimental
+Evaluation) y 7 (Conclusions) están vacías — solo el título.** Todo el trabajo de
+`GANTrainerV2`, los fixes de métricas, y los resultados de §14-15 es exactamente lo que
+falta redactar ahí. También hay un placeholder sin terminar en la Introducción:
+*"Experimental results demonstrated that....."*
+
+### 16.2 Confirmación cruzada — el fix de RED (§13.2) era correcto
+
+La Sección 2 del paper define RED textualmente como *"measures temporal realism by
+analyzing **when events occur within a trace**"* — la definición **temporal**, no
+ordinal. Confirma, con el propio texto del paper, que la redefinición ordinal que se
+había colado en el código (§11.2) nunca debió estar ahí, y que revertirla a la
+definición temporal (§13.2) fue la decisión correcta. CTD, 2GD y CONF también están
+descritas en el paper exactamente como quedaron implementadas — el trabajo de esta
+rama está alineado con lo que el paper necesita reportar.
+
+### 16.3 ⚠️ Anonimato roto — mismo problema que Paper 1 (`CLAUDE.md` §7)
+
+La referencia **[4]** del Paper 2 dice literalmente: *"BlindAuthors: Blind paper. PeerJ
+Computer Science 10, e2094 (May 2024)"* — **idéntico al problema ya documentado en el
+`CLAUDE.md` del Paper 1**: volumen, artículo y fecha identifican inequívocamente el
+framework "Dynamics" en una revisión doble-ciego. Bloqueante si el venue es doble-ciego
+— debe corregirse antes de someter, en ambos papers.
+
+### 16.4 Detalles menores detectados
+
+- Error de idioma en Related Work: *"these approaches [10],[3] **y** [5] share a common
+  limitation"* — una "y" en español se coló en el texto en inglés.
+- La Etapa 2 del framework (Adversarial Training) se describe como *"generator and
+  discriminator focused on structural patterns"* — pero el discriminador real
+  (`model_wgan_transformer.py`) también incorpora Time2Vec para codificar tiempo
+  (`dur`/`wait`), no solo estructura categórica. Precisar al redactar Secciones 4/5.
+
+### 16.5 Estado
+
+Solo análisis — sin cambios de código. Pendiente de que el usuario indique qué hacer a
+continuación (probablemente redactar las Secciones 4-7 con base en el trabajo ya
+validado de §10-15).
