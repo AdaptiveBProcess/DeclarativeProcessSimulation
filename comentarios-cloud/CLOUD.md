@@ -1078,3 +1078,69 @@ en §18.4 siguen prometiendo simulación completa. Con el alcance acotado, hay q
 revisar en algún momento si el título necesita suavizarse o si se mantiene aclarando
 explícitamente que la integración con el motor de simulación queda como *future work*.
 Pendiente para cuando se retome el abstract (el usuario pidió dejarlo para el final).
+
+---
+
+## 21. CORRECCIÓN de §20 — la simulación completa NO queda como future work; se reutiliza código ya existente (2026-08-06)
+
+**Esta sección corrige la decisión de alcance de §20.2.** El usuario compartió la
+Figura 2 del paper de Dynamics[4] (pipeline completo: Inputs → Simulation Model
+Discovery → Constrained-Sequences Generation → Merge and Simulation of BPS Models,
+con 5 módulos numerados ①-⑤) y propuso: **tocar solo el módulo ③** (el
+Hallucinator — LSTM en Dynamics, GAN en RULE-GAN), reutilizando ①②④⑤ sin cambios.
+
+### 21.1 Verificación técnica (confirmado leyendo `dg_prediction.py`)
+
+La rama LSTM de `main()` ya ejecuta exactamente la secuencia de la Figura 2:
+```
+① reglas (rules.ini, ya disponible para ambos caminos)
+③ call_predict(...)                         ← LSTM Hallucinator
+② generate_bps_model(r["input"], ...)        ← Simod descubre ASIS BPS Model
+④ generate_bps_model(r["hallucinated"], ...) ← Simod descubre el modelo TO-BE
+⑤ adapt_resources(...) + simulate_model(...) + simulate_bimp(...)  ← merge + Simulate
+```
+`generate_bps_model`, `adapt_resources`, `simulate_model`, `simulate_bimp`
+(`dg_prediction.py` líneas 84, 91, 100, 222) son funciones de módulo independientes,
+agnósticas al método de generación — solo reciben rutas de carpetas, no les importa
+si el log adentro lo produjo un LSTM o una GAN. `_run_gan_pipeline` (línea 321) hoy
+genera con la GAN (③) y **retorna temprano** (líneas 418-420) sin llamar a nada de
+esto — no porque falte construir algo nuevo, sino porque nadie conectó la llamada
+todavía.
+
+**Conclusión: NO es trabajo de investigación en simulación pendiente — es reutilizar
+código ya validado** (el mismo que ya usa el benchmark LSTM). La estimación de §20 de
+tratar esto como *future work* completo era demasiado conservadora; se retira esa
+recomendación.
+
+### 21.2 Diseño de los dos benchmarks (reemplaza el alcance acotado de §20.2-20.3)
+
+- **Contra Dynamics/LSTM**: comparación a **nivel de pipeline completo**. Mismos
+  módulos ①②④⑤; se intercambia solo ③ (LSTM vs. GAN); se comparan las métricas de
+  desempeño de la simulación what-if final (no solo del log generado). Responde:
+  *"¿mejora el resultado de simulación al cambiar el generador, con todo lo demás
+  igual?"*
+- **Contra CVAE**: comparación a **nivel de módulo generador únicamente** — CVAE no
+  tiene ①②④⑤ (confirmado en §18.2: nunca simula, solo genera y evalúa el log
+  directamente), así que ahí la comparación justa es log-contra-log con su propio
+  protocolo (RED/CTD/2GD/CONF/variantes), sin simulación de por medio.
+
+Dos escenarios justos y distintos, cada uno igualando el nivel de comparación al que
+opera cada baseline — no el mismo protocolo con el modelo cambiado.
+
+### 21.3 La expresividad no se reclama como contribución propia
+
+El mecanismo DECLARE (módulo ①, `rules.ini`/`evaluate_condition`) se hereda de
+Dynamics — no es una contribución de RULE-GAN. La contribución real y distintiva es
+una sola, concentrada en el módulo ③: **diversidad genuina sin perder la
+expresividad heredada**. Esto reemplaza el listado de "3 problemas" de §20.4 por un
+solo problema central, probado en dos niveles distintos (pipeline completo vs.
+Dynamics, módulo generador vs. CVAE) — mensaje más nítido que el de §20.
+
+### 21.4 Estado
+
+Decisión de alcance final (reemplaza §20.2-20.4). Sigue pendiente conectar
+`_run_gan_pipeline` con los módulos ②④⑤ para completar el benchmark contra Dynamics —
+tarea de ingeniería modesta dado lo verificado en §21.1, no un proyecto de
+investigación aparte. El análisis de variantes (§17.2.1) sigue siendo el paso más
+urgente (necesario para ambos benchmarks). Pendiente también: enlazar esta propuesta
+con una problemática concreta de process mining — ver discusión en curso.
