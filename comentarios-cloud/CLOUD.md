@@ -1334,3 +1334,66 @@ análisis de variantes (§17.2.1, sigue siendo el paso técnico más urgente), c
 `_run_gan_pipeline` con los módulos ②④⑤ (§21.1), propagar la precisión
 secuencias-vs-actividades (§22.2) a Background/Introduction cuando se revisen a
 fondo, y verificar `PURPLE` contra su paper original si se consigue acceso a él.
+
+---
+
+## 24. Abstract — versión final (2026-08-10)
+
+### 24.1 Contexto
+
+Tras §23.1, el abstract siguió puliéndose en varias vueltas rápidas más
+(reformulación del gap en términos de "reaches full process simulation but remains
+confined to replicative behavior" / "generates counterfactual behavior but stops
+at the log level" — el mismo par conceptual de siempre, expresado de forma más
+directa). El usuario pidió una lectura objetiva del resultado ensamblado.
+
+### 24.2 Revisión objetiva — hallazgos
+
+1. **Fortaleza real**: por primera vez, un solo hilo conceptual
+   (replicative/counterfactual, simulación/nivel-de-log) corre sin interrupción
+   desde el párrafo 1 hasta el cierre del párrafo 3 — el problema, la solución y
+   los baselines se describen exactamente en los mismos términos.
+2. **Ambigüedad real encontrada**: el párrafo 3 presentaba *"Evaluation follows a
+   multidimensional suite: [CONF, 2GD, RED, CTD]"* como si aplicara por igual a
+   ambos baselines, cuando por diseño (§21.2) la comparación contra el LSTM es
+   **a nivel de simulación completa** (métricas de desempeño what-if) y la
+   comparación contra CVAE es **a nivel de log generado** (las 4 métricas
+   nombradas). Corregido — ver §24.3.
+3. **Riesgo ya conocido, reconfirmado**: *"significantly outperforms both
+   baselines"* sigue sin respaldo empírico (Sección 6 vacía, sin resultados
+   reales todavía). No se tocó la frase — el usuario ya había decidido
+   conservarla — pero queda marcada como pendiente de verificar contra
+   resultados reales antes del envío final.
+4. **Detalle menor, sin resolver**: `"restriction"` (párrafos 2-3) y
+   `"business rules"` (párrafo 2) se usan como sinónimos sin unificarse
+   explícitamente — dejar para la pasada de consistencia terminológica general.
+
+### 24.3 Texto final acordado
+
+Párrafos 1 y 2 sin cambios respecto a la última iteración. Párrafo 3 corregido
+para que cada baseline quede atado a su propio protocolo/nivel de evaluación, en
+vez de implicar una única batería de métricas compartida:
+
+```latex
+\begin{abstract}
+What-if process simulation is essential to evaluate the impact of hypothetical changes for process improvement. However, current LSTM-based architectures suffer from structural rigidity due to their autoregressive nature: because generation proceeds by continuing the historical prefixes on which the model was trained, the resulting synthetic logs remain largely replicative, reproducing variations of already-observed patterns rather than genuinely novel, counterfactual process behaviors that are logically valid yet absent from the historical data. Existing approaches reflect this same divide: those that reach full process simulation are, so far, confined to replicative behavior, while those capable of generating counterfactual behavior stop at the log level, without validating its simulated impact. What remains missing---and what this paper addresses---is an approach that generates counterfactual process behavior and carries it through to a validated process simulation.
+%
+This paper proposes a rule-guided deep learning architecture that synergizes Generative Adversarial Networks (GANs) with DECLARE declarative constraints: the GAN decouples sequence generation from fixed patterns to foster diversity, while DECLARE constrains the generative space to ensure synthetic traces adhere to the imposed business rules. The resulting synthetic log then feeds a process simulation model, validating the restriction's operational impact as an actual what-if scenario rather than at the log level alone.
+%
+The proposed framework is benchmarked against two complementary baselines, each evaluated at the level at which it operates: a declarative-constraint-guided LSTM generator, which reaches full process simulation but remains confined to replicative behavior, is compared end-to-end through the full simulation pipeline on what-if performance metrics; a conditional variational autoencoder, which generates counterfactual behavior but stops at the log level, is compared directly on the generated event logs using a multidimensional evaluation suite---conformance scores for logical consistency, 2-Gram Distance (2GD) for structural fidelity, and Relative Event Distribution (RED) with Cycle Time Distribution for temporal realism. Preliminary results on synthetic and real-world event logs demonstrate that our approach significantly outperforms both baselines in generating novel, non-repetitive, yet strictly compliant process behaviors. This hybrid approach closes the gap between counterfactual generation and validated simulation, enabling more robust and expressive what-if analysis.
+\end{abstract}
+```
+
+Único cambio de contenido respecto a la versión que el usuario compartió: la
+oración de las 4 métricas ahora cuelga explícitamente de la comparación con CVAE;
+la comparación con el LSTM se describe como "end-to-end... what-if performance
+metrics" sin nombrar esas 4 métricas ahí. Nada más se modificó.
+
+### 24.4 Estado
+
+Abstract cerrado en esta iteración (pendiente de confirmación final del usuario
+tras leer §24.3). Pendientes sin cambios respecto a §23.3, más dos nuevos:
+- Antes del envío final, verificar que "significantly outperforms both baselines"
+  esté respaldado por resultados reales (Sección 6 sigue vacía).
+- En la pasada de consistencia terminológica general, unificar
+  `"restriction"`/`"business rules"` en un solo término.
