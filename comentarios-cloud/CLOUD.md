@@ -1219,3 +1219,118 @@ Abstract actualizado, pendiente de confirmación del usuario. La aclaración de 
 (secuencias vs. actividades) debe propagarse también a Background/Introduction cuando
 se revisen a fondo (ya tienen lenguaje de "unobserved"/"counterfactual" que debe
 quedar consistente con esta precisión).
+
+---
+
+## 23. Iteración final del Abstract y de la Tabla 1 (2026-08-06)
+
+### 23.1 Abstract — vuelta a la versión original con correcciones mínimas
+
+Tras varias vueltas de reescritura más ambiciosa (§22.3, inspirada en la disciplina
+estructural del abstract de CVAE), el usuario decidió que el abstract original ya
+estaba bien y que solo hacían falta las 2 imprecisiones puntuales + una frase de gap
+— sin adoptar el resto de cambios de tono/estructura de esa iteración. Versión final
+acordada:
+
+```latex
+What-if process simulation is essential to evaluate the impact of hypothetical changes for process improvement. However, current LSTM-based architectures suffer from structural rigidity due to their autoregressive nature, generating low-diversity synthetic logs that over-represent frequent patterns. As a result, the behavior these models generate remains largely replicative, reproducing variations of already-observed patterns rather than genuinely novel, counterfactual process behaviors that are logically valid yet absent from the historical data. Existing approaches thus face a trade-off between these two properties: declarative-constraint-guided methods offer formal expressiveness but remain structurally rigid, while latent-variable models such as conditional variational autoencoders achieve greater diversity but lack a mechanism for imposing explicit business rules.
+%
+This paper proposes a rule-guided deep learning architecture that synergizes Generative Adversarial Networks (GANs) with DECLARE declarative constraints. The GAN component fosters structural diversity by decoupling sequence generation from fixed patterns. Simultaneously, DECLARE logic serves as a formal conceptual model that constrains the generative space, ensuring that synthetic traces adhere to predefined business invariants and logical dependencies.
+%
+The proposed framework is benchmarked against two complementary baselines representative of this trade-off---a declarative-constraint-guided LSTM generator and a diversity-oriented conditional variational autoencoder---using a multidimensional evaluation suite: conformance scores for logical consistency, 2-Gram Distance (2GD) for structural fidelity, and Relative Event Distribution (RED) with Cycle Time Distribution for temporal realism. Preliminary results on synthetic and real-world event logs demonstrate that our approach significantly outperforms baseline models in generating novel, non-repetitive, yet strictly compliant process behaviors. This hybrid approach bridges the gap between stochastic data-driven generation and formal conceptual modeling, enabling more robust and expressive what-if analysis.
+```
+
+Cambios respecto al original, solo 3, nada más:
+1. La frase *"These models also lack a formal mechanism..."* (imprecisa, falsa para
+   Dynamics) se reemplazó por una consecuencia directa de la rigidez, nombrando
+   explícitamente **"replicative"** vs. **"counterfactual"** como el par conceptual
+   central — sin el matiz de "aunque tenga mecanismo formal" (ese matiz ya vive en la
+   frase de gap que sigue, no hacía falta repetirlo).
+2. Frase de gap nueva, cierra el párrafo 1, nombra el trade-off real (expresivo-pero-
+   rígido vs. diverso-pero-sin-expresividad) encontrado en el trabajo relacionado.
+3. *"benchmarked against LSTM-based generators"* → nombra los dos baselines
+   explícitamente como representantes de cada lado del trade-off (ya no agrupa a CVAE
+   bajo una etiqueta que no le corresponde).
+
+El párrafo 2 (arquitectura) y el resto del párrafo 3 (resultados, cierre) quedan
+**exactamente iguales al original** — se descartó la versión más elaborada de §22.3
+(motivación extendida, mecanismo técnico detallado, quitar "outperforms") por decisión
+explícita del usuario.
+
+**Nota pendiente, sin resolver**: con el alcance de §21 (RULE-GAN sí completa el
+pipeline de simulación reutilizando código existente, no es *future work*), el
+título *"Enhanced What-if Process Simulation"* ya no necesita suavizarse — la
+preocupación de §18.6/20.6 queda resuelta automáticamente por la corrección de
+alcance de §21, no hace falta tocar el título.
+
+### 23.2 Tabla 1 — versión final
+
+Iteración conjunta sobre la Tabla 1 del paper (capacidades de los frameworks
+existentes). Se generalizó la columna de 4 sub-columnas de "Generated Output"
+(`PM as-is`/`PM to-be`/`PMS as-is`/`PMS to-be`) a 3 (`Process Modeling`/`PSM`/
+`Synthetic Log`), y se corrigieron 3 inconsistencias en el camino:
+
+1. **CVAE**: `Analytical perspective` corregido de *"Predictive / simulation"* a
+   *"Predictive"* — se contradecía con su propio `PSM = ✗` en la misma fila (CVAE
+   nunca simula, confirmado en §18.2).
+2. **PURPLE**: `PSM` ahora anotado como `✓asis / ✓tobe` (antes un ✓ suelto) — el texto
+   del related work confirma que simula ambos escenarios, no solo uno.
+3. **Dynamics**: `Synthetic Log` corregido de ✗ a **✓** — al generalizar la columna
+   (ya no es específicamente "AS-IS"), quedó claro que Dynamics sí produce un log
+   sintético como artefacto intermedio (el *Constrained LSTM Hallucinator* genera la
+   secuencia de actividades TO-BE, módulo ③ de la Fig. 2) — es el mismo tipo de
+   artefacto que produce Rule-GAN en su propio módulo ③, la diferencia entre ambos la
+   captura la columna `Trace Diversity`, no la existencia del log en sí.
+
+**Nota de baja confianza, sin resolver**: `PURPLE` con `Synthetic Log = ✗` y
+`Process Modeling = ✗` no se pudo verificar contra el paper original de PURPLE (no se
+ha leído directamente, solo lo que cita el borrador de RULE-GAN) — queda como
+supuesto razonable, no como hecho confirmado con la misma solidez que el resto de la
+tabla.
+
+LaTeX final (requiere `\usepackage{makecell}` en el preámbulo para las celdas de dos
+líneas `asis`/`tobe`):
+
+```latex
+%
+\begin{table*}[ht!]
+\vspace{-2em} % reduce space before table content
+\centering
+\renewcommand{\arraystretch}{1.3} % Le da un poco más de espacio/aire a las filas
+\large 
+\caption{Capabilities of existing frameworks for process simulation and what-if analysis}
+\label{tab:comparison_matrix} 
+\resizebox{\textwidth}{!}
+{%
+\begin{tabular}{M{3.5cm} M{2.5cm} M{3cm} M{2.5cm} M{2.5cm} M{2.8cm} M{2.2cm} M{2.8cm}}
+\toprule
+\multirow{2}{*}{\textbf{Approach}} 
+    & \multirow{2}{=}{\textbf{Trace Diversity}}
+    & \multirow{2}{=}{\textbf{Expressiveness in the condition}} 
+    & \multirow{2}{*}{\textbf{Dimension}} 
+    & \multicolumn{3}{c}{\textbf{Generated Output}} 
+    & \multirow{2}{=}{\textbf{Analytical perspective}} \\ 
+    \cmidrule(lr){5-7}
+    & & & & \textbf{Process Modeling} & \textbf{PSM} & \textbf{Synthetic Log} &  \\ 
+\midrule
+
+Fast Synthetic\cite{fastSynthetic} & \xmark & \xmark & Data / Flow & \xmark & \xmark & \cmark & Descriptive \\ 
+ProcessGAN\cite{10.1145/3687464} & \xmark & \xmark & Flow & \xmark & \xmark & \cmark & Descriptive \\ 
+PURPLE\cite{purple} & \xmark & \xmark & Flow / Resources & \xmark & \makecell{\cmark asis \\ \cmark tobe} & \xmark & Descriptive \\ 
+Dynamics\cite{10.7717/peerj-cs.2094} & \xmark & \cmark Declare & Flow & \makecell{\cmark asis \\ \cmark tobe} & \cmark What-if scenarios & \cmark & Predictive / simulation \\ 
+CVAE\cite{CVAE} & \cmark & \xmark Binary & Data / Flow & \xmark & \xmark & \cmark & Predictive \\ 
+\midrule
+Rule-GAN & \cmark & \cmark Declare & Flow & \makecell{\cmark asis \\ \cmark tobe} & \cmark What-if scenarios & \cmark & Predictive / simulation \\ 
+\bottomrule
+\end{tabular}
+}
+\end{table*}
+```
+
+### 23.3 Estado
+
+Abstract y Tabla 1 acordados y documentados. Pendientes generales sin cambios:
+análisis de variantes (§17.2.1, sigue siendo el paso técnico más urgente), conectar
+`_run_gan_pipeline` con los módulos ②④⑤ (§21.1), propagar la precisión
+secuencias-vs-actividades (§22.2) a Background/Introduction cuando se revisen a
+fondo, y verificar `PURPLE` contra su paper original si se consigue acceso a él.
