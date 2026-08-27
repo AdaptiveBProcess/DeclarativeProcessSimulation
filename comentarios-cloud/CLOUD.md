@@ -788,3 +788,80 @@ framework "Dynamics" en una revisión doble-ciego. Bloqueante si el venue es dob
 Solo análisis — sin cambios de código. Pendiente de que el usuario indique qué hacer a
 continuación (probablemente redactar las Secciones 4-7 con base en el trabajo ya
 validado de §10-15).
+
+---
+
+## 17. Comparación contra el protocolo de evaluación de CVAE (Graziosi et al. 2024) — la fuente primaria de nuestras métricas (2026-08-06)
+
+El usuario compartió el PDF completo del paper de CVAE (arXiv:2411.02131) — la fuente
+que `evaluacion/metrics.py` ya citaba para RED/CTD/2GD/CONF, pero que hasta ahora solo
+conocíamos indirectamente. Se comparó su protocolo experimental (Sección V del paper)
+contra lo que tenemos implementado y validado.
+
+### 17.1 Dónde coincidimos exactamente (confirmado, sin cambios necesarios)
+
+| Elemento del protocolo CVAE | Nuestro pipeline |
+|---|---|
+| Split cronológico 70%-10%-20% | `GANTrainerV2._split_timeline_70_10_20` |
+| 10 logs generados por modelo, cada uno del tamaño del test set | `_run_gan_pipeline`, `n_runs=10`, `num_cases=n_test_cases` |
+| RED = EMD de posición temporal **dentro de la traza** (nota al pie 7 del paper: explícitamente distinta de AED, que mide el horizonte del log completo) | `compute_red` (revertida en §13.2) — coincide exactamente, incluida la distinción RED-vs-AED que motivó la corrección |
+| CTD = EMD de tiempos de ciclo | `compute_ctd` |
+| 2GD = EMD de bigramas (directly-follows) | `compute_2gd` |
+| CONF = % de restricciones DECLARE satisfechas, soporte≥90% | `compute_conf` (base) |
+| Baseline "optimista" `train_log` graficado junto a los modelos generativos (Fig. 2) | `dg_boxplot.py` — ya existía sin comitear (recuperado en §11), diseñado explícitamente para replicar ese panel |
+| Convención de mejor/peor por métrica | Idéntica en nuestros docstrings |
+
+### 17.2 Tres gaps concretos — piezas del protocolo que el paper usa y nosotros no
+
+**1. Análisis de variantes (Tabla III del paper) — la pieza que falta para sostener "enhancing changes".**
+Protocolo exacto: para cada uno de los 10 logs generados, contar (a) variantes totales
+distintas, (b) cuántas ya existían en el log de entrenamiento, (c) cuántas ya existían
+en el log de test; promediar entre las 10 corridas. La diferencia (a)−(b) es el número
+de variantes genuinamente nuevas — el dato que sostendría la afirmación central de
+RULE-GAN. Es exactamente la "métrica de novedad/diversidad" pendiente desde §7/§8,
+ahora con especificación operacional exacta en vez de solo la idea.
+
+**2. CONF filtrado a variantes novedosas (nota al pie 8 del paper).**
+Cita textual: *"To ensure fairness, only generated variants that do not already appear
+in the training log are used for this analysis."* El CONF de la Fig. 2 del paper NO se
+calcula sobre todas las trazas generadas — solo sobre las genuinamente nuevas. Responde
+"¿el comportamiento *nuevo* que inventa el modelo sigue siendo conforme?", que es
+justo la pregunta de RULE-GAN. Nuestro `compute_conf` actual evalúa sobre todas las
+trazas sin este filtro — deberíamos calcular ambos (general y solo-novedosas).
+
+**3. El baseline `train_log` real (Sección V-D del paper) es distinto de nuestro
+self-check de §13.1.**
+El self-check de §13.1 comparó `test_split.csv` **contra sí mismo** — fue una
+herramienta de depuración (¿funciona el cálculo de CONF?), no el baseline del paper.
+El `train_log` real de CVAE: dividir train+val en **4 partes cronológicas no
+solapadas**, cada una del tamaño del test set, comparar cada una contra el test set —
+una distribución de referencia con datos reales distintos al test, no una comparación
+trivial idéntica. Todavía no construido para el reporte final.
+
+### 17.3 Dato que ya existe pero no se está capturando — análogo a RQ3/Tabla IV
+
+CVAE mide (Tabla IV) qué tan bien el modelo reproduce la proporción condicional
+objetivo. Nuestro mecanismo es distinto (rejection sampling contra `train_prop` en vez
+de una variable de condicionamiento explícita), pero la pregunta es análoga: ¿qué tan
+bien logra el GAN reproducir la proporción objetivo de trazas que cumplen la regla
+DECLARE? El dato **ya se calcula** en `GANPredictor._generate_traces`
+(`achieved = n_cond/max(n_accepted,1)`, impreso en consola) pero no se captura ni se
+tabula — ganancia barata, el cálculo ya existe.
+
+### 17.4 Gap de alcance (más grande, pendiente de decidir)
+
+CVAE compara contra `lstm1`/`lstm2` (el LSTM original de Camargo et al. — mismo
+linaje que "Dynamics"/GENESIS). Para que RULE-GAN sostenga "GAN > LSTM en diversidad"
+necesitaríamos correr el mismo protocolo (10 réplicas, mismas métricas) contra
+`EventLogPredictor` (`GenerativeLSTM/`) sobre el mismo log — no hecho todavía; todo lo
+validado en §10-15 fue GAN en aislamiento, nunca comparado cabeza a cabeza contra LSTM
+bajo el mismo protocolo. Además CVAE valida en 4 configuraciones reales sustanciales
+(782 a 129.615 trazas); nosotros validamos sobre todo en `RunningExample` (540 trazas
+sintéticas) — diferencia de escala a tener presente para la Sección 6.
+
+### 17.5 Estado
+
+Solo análisis — sin cambios de código todavía. Pendiente de que el usuario priorice
+cuál de estos gaps abordar primero (candidatos naturales por costo/impacto: 17.3
+primero por ser gratis, luego 17.2.1 el análisis de variantes por ser el más crítico
+para la afirmación central del paper).
