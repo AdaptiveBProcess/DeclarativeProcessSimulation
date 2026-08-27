@@ -954,3 +954,127 @@ The proposed framework is benchmarked against two complementary families of stat
 Abstract corregido y acordado. Pendiente: aplicar el mismo vocabulario
 (counterfactual / replicative-in-distribution) de forma consistente cuando se revisen
 Introduction y Related Work a fondo, y luego retomar los pendientes técnicos de §17.
+
+---
+
+## 19. Auditoría del Background (Sección 2) y de la Tabla 1 — hallazgo clave sobre ProcessGAN (2026-08-06)
+
+El usuario reenvió el mismo borrador (confirmado idéntico, sin las correcciones de §18
+aplicadas todavía) pidiendo una nueva pasada. Se auditó el Background (no revisado a
+fondo antes) y se revisó la Tabla 1 con más cuidado.
+
+### 19.1 Background — hallazgos
+
+- **Misma inconsistencia predictive/prescriptive que el Paper 1** (`CLAUDE.md` §7): el
+  texto dice *"unseen traces primarily supports **prescriptive** goals"*, pero la Tabla
+  1 clasifica a Rule-GAN/Dynamics/CVAE como *"Predictive / simulation"*. Aparece en
+  ambos papers de este grupo de investigación — vale la pena resolverlo con el mismo
+  criterio en los dos.
+- Falta definir **"counterfactual"** explícitamente en el Background — es central desde
+  el Abstract pero nunca se define formalmente.
+- Cita [11] (*International Journal of Religion*) para la distinción as-is/to-be:
+  verificada como real y correcta (no es un error de referencia), pero es un venue de
+  bajo perfil para una afirmación fundacional que la referencia [7] (Dumas et al.,
+  ya citada en el mismo párrafo) cubre de forma más autorizada.
+- Cita genérica [14] compartida para las afirmaciones de LSTM y de GAN — una fuente más
+  específica para GANs en process mining (p.ej. Taymouri et al., ya citado por CVAE)
+  sería más fuerte.
+- Menores: *"allow to validate"* → *"allow validating"* (calco del español);
+  *"real logs.[14]"* (cita debería ir antes del punto).
+
+### 19.2 Tabla 1 — hallazgo importante: ProcessGAN tensiona el argumento arquitectónico central
+
+**ProcessGAN[10] — también una GAN — aparece con Trace Diversity = ✗ en la Tabla 1.**
+Esto contradice, en apariencia, la premisa del abstract de que *"The GAN component
+fosters structural diversity by decoupling sequence generation from fixed patterns"* —
+si fuera cierto solo por ser GAN, ProcessGAN también tendría diversidad alta.
+
+La explicación está en el propio texto pero no se conecta explícitamente: ProcessGAN
+está diseñado para **preservación de privacidad**, replicando la distribución real
+(su objetivo de entrenamiento es *parecerse* al log, no explorar más allá de él). Es
+decir: **la diversidad no viene gratis por la arquitectura GAN — depende del objetivo
+de entrenamiento.** Sin explicar esto, un revisor va a preguntar exactamente por qué
+RULE-GAN sí logra diversidad si ProcessGAN no. Se retoma este hallazgo en §20 como
+evidencia de apoyo para el problema #2 del enfoque propuesto.
+
+---
+
+## 20. Redefinición del alcance del paper y propuesta de enfoque (2026-08-06)
+
+### 20.1 Contexto — la pregunta que motivó esto
+
+El usuario pidió repensar, a partir de todo lo visto de los trabajos relacionados, si
+la propuesta del paper está bien cimentada antes de invertir más esfuerzo ("si no,
+voy a sufrir después"). Se construyó un análisis de 3 ejes independientes para
+ubicar el hueco real en la literatura:
+
+| Eje | Dynamics[4] | CVAE[8] | ProcessGAN[10] | Fast Synthetic[3]/PURPLE[5] |
+|---|---|---|---|---|
+| Expresividad formal (DECLARE) | ✓ | ✗ (binario) | ✗ | ✗ (manual) |
+| Diversidad/novedad genuina | ✗ (LSTM rígido) | ✓ (confirmado, Tabla III de su paper) | ✗ (por diseño, ver §19.2) | ✗ |
+| Simulación what-if completa (Simod → PSM TO-BE → simulación) | ✓ | ✗ (confirmado leyendo su paper completo) | ✗ | Parcial (PURPLE, modelo manual) |
+
+**Ningún trabajo ocupa las 3 celdas a la vez** — hueco real, no retórico.
+
+**Pero, honestamente, tampoco nosotros lo ocupamos todavía**: de los 3 ejes, solo el de
+expresividad formal está sólidamente validado (`CLOUD.md` §10-15). La diversidad
+genuina no tiene evidencia empírica (es exactamente el análisis de variantes pendiente
+de §17.2.1). La simulación completa no está conectada para el camino GAN (confirmado
+dos veces: en la discusión del framework base y al leer el paper de CVAE completo,
+§18.2) — metodológicamente hoy estamos al nivel de CVAE (evaluación a nivel de log),
+no al de Dynamics (simulación completa), pese a que el título promete
+*"What-if Process **Simulation**"*.
+
+### 20.2 Decisión de alcance (acordada)
+
+**Se deja la integración con simulación completa (Simod → PSM TO-BE → simulación,
+eje 3) explícitamente como *future work*.** El paper no se somete afirmando resolver
+los 3 ejes — se posiciona sobre los 2 que sí se pueden defender con evidencia:
+expresividad formal + diversidad genuina, evaluadas a nivel de log (mismo protocolo
+que usa CVAE). Precedente directo: CVAE hace exactamente este tipo de acotación en su
+propia conclusión (*"In the future, we plan to extend the log generation by also
+taking into account resources..."*).
+
+### 20.3 Propuesta de enfoque con el alcance acotado
+
+RULE-GAN se reposiciona como una mejora del **motor de generación de trazas** dentro
+del pipeline what-if más amplio (el de Dynamics/GENESIS) — no como un framework de
+simulación end-to-end nuevo. La afirmación central pasa a ser: *dado un log real y una
+política DECLARE, generar un log sintético que sea simultáneamente conforme a esa
+política y genuinamente diverso respecto al histórico* — algo que ningún generador
+existente logra a la vez. Ese log queda listo para conectarse al resto del pipeline
+(Simod → PSM TO-BE → simulación) en trabajo futuro.
+
+### 20.4 Problemas que soluciona (cada uno anclado a un competidor específico)
+
+1. **El problema de CVAE — diversidad sin expresividad formal.** CVAE logra diversidad
+   genuina vía muestreo del espacio latente, pero solo puede condicionar con una
+   variable binaria, no con una política de negocio explícita y verificable. RULE-GAN
+   reemplaza ese condicionamiento binario por restricciones DECLARE formales.
+2. **El problema de Dynamics — expresividad sin diversidad.** Dynamics puede imponer
+   una política DECLARE explícita, pero su generador LSTM autoregresivo solo filtra
+   continuaciones ya aprendidas del histórico — nunca inventa una secuencia
+   genuinamente nueva que también cumpla la regla. RULE-GAN, al generar la traza
+   completa desde ruido (no paso a paso desde un prefijo real), no tiene esa
+   limitación estructural — **pendiente de prueba empírica (§17.2.1), no se puede
+   afirmar solo por diseño.**
+3. **Problema metodológico secundario, ya resuelto en gran parte.** CVAE construyó un
+   protocolo de evaluación riguroso (RED/CTD/2GD/CONF + análisis de variantes + ratio
+   condicional) pero solo para condicionamiento binario. Nadie lo ha aplicado a un
+   generador condicionado por reglas DECLARE — ya se construyó y depuró esa base en
+   `CLOUD.md` §10-15 (contribución metodológica exportable, no solo un medio para
+   validar RULE-GAN).
+
+### 20.5 Consecuencia directa sobre las prioridades técnicas
+
+Con este alcance, el análisis de variantes (§17.2.1) deja de ser "importante" y pasa a
+ser **innegociable** — es la única evidencia posible del problema #2, que es ahora
+literalmente la afirmación central del paper. Es el siguiente paso técnico obligatorio.
+
+### 20.6 Efecto colateral anotado, sin resolver todavía
+
+El título (*"Enhanced What-if **Process Simulation**"*) y parte del abstract corregido
+en §18.4 siguen prometiendo simulación completa. Con el alcance acotado, hay que
+revisar en algún momento si el título necesita suavizarse o si se mantiene aclarando
+explícitamente que la integración con el motor de simulación queda como *future work*.
+Pendiente para cuando se retome el abstract (el usuario pidió dejarlo para el final).
