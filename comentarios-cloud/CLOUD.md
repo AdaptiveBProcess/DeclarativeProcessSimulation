@@ -1144,3 +1144,78 @@ tarea de ingeniería modesta dado lo verificado en §21.1, no un proyecto de
 investigación aparte. El análisis de variantes (§17.2.1) sigue siendo el paso más
 urgente (necesario para ambos benchmarks). Pendiente también: enlazar esta propuesta
 con una problemática concreta de process mining — ver discusión en curso.
+
+---
+
+## 22. Motivación práctica y precisión crítica: secuencias nuevas, no actividades nuevas (2026-08-06)
+
+### 22.1 Motivación práctica (contexto de process mining)
+
+Se articuló el "para qué le importa esto a un analista de negocio", análogo al
+framing del recomendador en el Paper 1. Resumen: cuando la política a evaluar tiene
+poco o ningún precedente histórico, un generador rígido (LSTM) solo puede repetir
+casi-copias de los pocos casos que ya la cumplían por casualidad — dándole al
+analista un rango de resultados de simulación artificialmente angosto y
+sobreconfiado, precisamente en el escenario donde más importa tomar una buena
+decisión (una política sin precedente claro). RULE-GAN no promete "trazas más
+interesantes" — promete una base de decisión más honesta.
+
+**Conexión opcional con el Paper 1** (no obligatoria, se puede mencionar como
+contexto): GENESIS responde "¿qué política probar?"; RULE-GAN responde "¿qué tan
+confiable es la simulación de esa política, sobre todo si es nueva?" — problemas
+complementarios en el mismo pipeline, sin dependencia técnica entre ambos.
+
+### 22.2 CORRECCIÓN CRÍTICA — no son actividades nuevas, son secuencias/órdenes nuevos de actividades ya existentes
+
+Al discutir la motivación, se detectó un riesgo real de sobre-promesa: la idea de que
+el analista podría especificar **actividades** que no existen en el log histórico.
+**Esto es falso y hay que evitarlo explícitamente en el paper.**
+
+Verificado en código: el generador termina en
+`TimeDistributed(Dense(n_activities, softmax))`, donde `n_activities` se construye
+a partir del vocabulario único de actividades del log de entrenamiento
+(`GANTrainerV2._build_indexes`). Es matemáticamente imposible que ese softmax asigne
+probabilidad a una actividad fuera de ese vocabulario — no existe esa salida. **El
+LSTM de Dynamics tiene la misma restricción** (capa de salida softmax sobre el mismo
+vocabulario cerrado), y **CVAE lo confirma explícitamente en su propio paper**:
+*"the model outputs a probability distribution for each possible value and the
+argmax operator is used to select the most likely one"*. Ningún modelo generativo
+entrenado de esta forma puede producir una actividad nunca vista — no es una
+limitación nuestra, es estructural a los tres enfoques.
+
+**Lo que sí difiere entre LSTM y GAN**: el *orden* o la *combinación* de actividades
+que **ya existen** en el vocabulario, cuando esa secuencia específica casi no
+ocurrió en el histórico. Ejemplo: "Verificación de Antecedentes (C) antes de Aprobar
+el Pago (P)" — C y P ya son actividades conocidas; lo novedoso es la secuencia
+C-antes-de-P aplicada de forma consistente, no las actividades en sí.
+
+**Implicación para el paper**: cualquier lenguaje sobre "comportamiento nunca antes
+visto" debe leerse y redactarse como **variantes/secuencias nuevas de actividades
+conocidas**, nunca como "actividades nuevas". Esto es exactamente lo que mide el
+análisis de variantes de §17.2.1 (cuenta secuencias distintas, no vocabulario) — ya
+estaba correctamente alcanzado, esta sección solo lo deja explícito para evitar que
+se cuele una sobre-promesa en la redacción.
+
+### 22.3 Abstract actualizado (reemplaza la versión de §18.4)
+
+Incorpora: el alcance de módulo ③ únicamente (§21), el diseño de dos benchmarks a
+niveles distintos (§21.2), que la expresividad DECLARE se hereda y no se reclama como
+contribución propia (§21.3), y la motivación práctica de §22.1 — sin caer en la
+sobre-promesa de §22.2.
+
+```latex
+\begin{abstract}
+What-if process simulation is essential to evaluate the impact of hypothetical changes for process improvement. However, current LSTM-based architectures suffer from structural rigidity due to their autoregressive nature, generating low-diversity synthetic logs that over-represent frequent patterns. Even when a formal mechanism to incorporate exogenous business rules is available, as in declarative-constraint-guided approaches, this same autoregressive rigidity confines the generated behavior to replicative, in-distribution variations of already-observed patterns, rather than enabling genuinely novel, counterfactual process behaviors that comply with the imposed rules without being present in the historical data. This limitation is most consequential precisely when it matters most: for policies with little or no historical precedent, a rigid generator can only replay near-identical instances of the few compliant cases observed, yielding an artificially narrow and overconfident simulation of the policy's true operational impact.
+%
+This paper proposes RULE-GAN, a rule-guided deep learning architecture that replaces the autoregressive generation core of declarative-constraint-guided what-if simulation pipelines with a Generative Adversarial Network (GAN), while preserving their established DECLARE-based constraint-checking mechanism unchanged. By generating each synthetic trace as a whole from a latent noise vector rather than by conditioning on real historical prefixes, the GAN component decouples sequence generation from fixed patterns, fostering structural diversity, while the inherited DECLARE logic continues to constrain the generative space so that synthetic traces adhere to the imposed business invariants.
+%
+The proposed approach is evaluated against two complementary state-of-the-art baselines, each assessed at the level at which it operates: a declarative-constraint-guided LSTM architecture, compared end-to-end through the full simulation pipeline on what-if performance metrics, and a conditional variational autoencoder, compared directly at the level of generated event logs using a multidimensional evaluation suite---conformance scores for logical consistency, 2-Gram Distance (2GD) for structural fidelity, and Relative Event Distribution (RED) with Cycle Time Distribution for temporal realism. Preliminary results on synthetic and real-world event logs demonstrate that our approach significantly outperforms both baselines in generating novel, non-repetitive, yet strictly compliant process behaviors. This hybrid approach bridges the gap between stochastic data-driven generation and formal conceptual modeling, enabling more robust and trustworthy what-if analysis.
+\end{abstract}
+```
+
+### 22.4 Estado
+
+Abstract actualizado, pendiente de confirmación del usuario. La aclaración de §22.2
+(secuencias vs. actividades) debe propagarse también a Background/Introduction cuando
+se revisen a fondo (ya tienen lenguaje de "unobserved"/"counterfactual" que debe
+quedar consistente con esta precisión).
