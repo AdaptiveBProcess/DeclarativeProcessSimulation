@@ -865,3 +865,92 @@ Solo análisis — sin cambios de código todavía. Pendiente de que el usuario 
 cuál de estos gaps abordar primero (candidatos naturales por costo/impacto: 17.3
 primero por ser gratis, luego 17.2.1 el análisis de variantes por ser el más crítico
 para la afirmación central del paper).
+
+---
+
+## 18. Revisión de narrativa del Abstract/Introduction/Related Work (2026-08-06)
+
+Antes de abordar los pendientes técnicos de §17, el usuario pidió revisar si el paper
+tiene un objetivo y motivación claros — mismo tipo de auditoría que se hizo para la
+introducción del Paper 1 (`CLAUDE.md` §17-18 de ese archivo).
+
+### 18.1 Hallazgos de la revisión narrativa
+
+- **Abstract**: motivación clara en general, pero 2 imprecisiones reales:
+  1. Decía que los modelos LSTM *"lack a formal mechanism to incorporate exogenous
+     business rules"* — falso para Dynamics[4], que sí tiene ese mecanismo (lo dice el
+     propio Related Work del paper). Lo que le falta no es el mecanismo, es diversidad
+     en cómo lo usa (rigidez autoregresiva).
+  2. Decía *"benchmarked against LSTM-based generators"* — pero CVAE[8], el segundo
+     baseline, no es un generador LSTM rígido: ya resuelve diversidad vía muestreo del
+     espacio latente (lo reconoce el propio Related Work: *"the CVAE promotes greater
+     behavioral diversity"*). Agrupar ambos baselines bajo "LSTM-based" invita la
+     pregunta obvia de un revisor: *"¿por qué no usar CVAE con condicionamiento
+     declarativo?"*
+- **Introducción**: fluye mejor que la del Paper 1 (cadena lógica más coherente). Un
+  puente lógico flojo (concept drift → necesidad de what-if, son fenómenos endógeno vs.
+  exógeno respectivamente) y un error de concordancia (*"This approaches"* →
+  *"These approaches"*). Hallazgo importante: el párrafo 5 promete textualmente que la
+  Etapa 4 del framework evalúa *"fidelity, diversity, and constraint satisfaction"* —
+  **el propio paper ya se compromete a una evaluación de diversidad**, reforzando que
+  §17.2 (análisis de variantes) no es opcional.
+- **Related Work**: el párrafo del trade-off Dynamics-vs-CVAE (expresivo-pero-rígido
+  vs. diverso-pero-sin-expresividad-formal) es la mejor frase de todo el borrador —
+  articula con precisión el hueco que RULE-GAN llena. Se detectó además un probable
+  **error factual en la Tabla 1**: la fila de CVAE marca ✓ en "PMS as-is"/"PMS to-be"
+  (Process Model Simulation), pero tras leer el paper de CVAE completo (Secciones IV y
+  V), **CVAE nunca descubre ni simula un modelo de proceso — genera y evalúa el log
+  directamente contra el log de test, sin pasar por Simod ni por ningún motor de
+  simulación**. Esa fila de la Tabla 1 necesita corregirse.
+
+### 18.2 Respuesta a la pregunta pendiente de §17: ¿el log generado es resultado de una simulación?
+
+**En CVAE: no. Es la salida directa del decoder**, evaluada contra el log de test sin
+ningún paso de descubrimiento/simulación de proceso. Esto tiene una implicación
+práctica importante: **nuestro pipeline GAN actual (`_run_gan_pipeline`) ya está en el
+formato correcto para compararse contra CVAE sin cambios** (genera y evalúa el log
+directo, igual que ellos). Pero para comparar contra Dynamics/LSTM bajo su propia
+definición de "what-if simulation" (que sí incluye Simod → PSM TO-BE → simulación
+real), sigue haciendo falta el paso que se identificó como faltante en la sesión
+anterior (conectar Simod al camino GAN). Confirma que los dos benchmarks (§17.4)
+requieren diseños experimentales genuinamente distintos, no el mismo protocolo con el
+modelo cambiado.
+
+### 18.3 Terminología: "restrictive/enhancing changes" descartada, se usa "counterfactual" en su lugar
+
+Antes de anclar el par "restrictive changes"/"enhancing changes" en el abstract, se
+verificó contra la literatura (búsqueda web). Resultado: **"restrictive" ya tiene un
+significado establecido y distinto en el vecindario técnico exacto de este paper**
+(subsumption de restricciones DECLARE/MINERful: una restricción es "más restrictiva"
+cuando acota más el espacio de comportamiento válido — p.ej. `ChainSuccession` es más
+restrictiva que `Succession` — nada que ver con si el comportamiento generado es nuevo
+o ya visto). Usar "restrictive changes" con nuestro sentido (solo reproduce lo ya
+visto) habría chocado con ese significado establecido, en un paper que usa MINERful
+extensamente — mismo tipo de sobrecarga terminológica ya señalada como problema
+recurrente en el `CLAUDE.md` del Paper 1.
+
+En su lugar se adoptó vocabulario ya anclado en el propio paper y en su cadena de
+citas: **"counterfactual"** (ya usado en el párrafo 1 de la Introducción original:
+*"counterfactual logical changes not present in the historical data"*, y con respaldo
+bibliográfico directo vía Buliga et al., citado por CVAE como [29],
+*"Counterfactuals and ways to build them"*) para el comportamiento nuevo-pero-válido, y
+**"replicative, in-distribution"** para el comportamiento que solo recombina patrones
+ya vistos.
+
+### 18.4 Abstract corregido (acordado, listo para pegar en el `.tex`)
+
+```latex
+\begin{abstract}
+What-if process simulation is essential to evaluate the impact of hypothetical changes for process improvement. However, current LSTM-based architectures suffer from structural rigidity due to their autoregressive nature, generating low-diversity synthetic logs that over-represent frequent patterns. Even when a formal mechanism to incorporate exogenous business rules is available, as in declarative-constraint-guided approaches, this same autoregressive rigidity confines the generated behavior to replicative, in-distribution variations of already-observed patterns, rather than enabling genuinely novel, counterfactual process behaviors that comply with the imposed rules without being present in the historical data.
+%
+This paper proposes a rule-guided deep learning architecture that synergizes Generative Adversarial Networks (GANs) with DECLARE declarative constraints. The GAN component fosters structural diversity by decoupling sequence generation from fixed patterns. Simultaneously, DECLARE logic serves as a formal conceptual model that constrains the generative space, ensuring that synthetic traces adhere to predefined business invariants and logical dependencies.
+%
+The proposed framework is benchmarked against two complementary families of state-of-the-art generators: declarative-constraint-guided LSTM architectures, representative of expressive yet structurally rigid approaches, and latent-variable models such as conditional variational autoencoders, representative of diverse yet formally unconstrained approaches. Evaluation follows a multidimensional suite: conformance scores for logical consistency, 2-Gram Distance (2GD) for structural fidelity, and Relative Event Distribution (RED) with Cycle Time Distribution for temporal realism. Preliminary results on synthetic and real-world event logs demonstrate that our approach significantly outperforms both baseline families in generating novel, non-repetitive, yet strictly compliant process behaviors. This hybrid approach bridges the gap between stochastic data-driven generation and formal conceptual modeling, enabling more robust and expressive what-if analysis.
+\end{abstract}
+```
+
+### 18.5 Estado
+
+Abstract corregido y acordado. Pendiente: aplicar el mismo vocabulario
+(counterfactual / replicative-in-distribution) de forma consistente cuando se revisen
+Introduction y Related Work a fondo, y luego retomar los pendientes técnicos de §17.
