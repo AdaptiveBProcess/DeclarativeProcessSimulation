@@ -1397,3 +1397,157 @@ tras leer §24.3). Pendientes sin cambios respecto a §23.3, más dos nuevos:
   esté respaldado por resultados reales (Sección 6 sigue vacía).
 - En la pasada de consistencia terminológica general, unificar
   `"restriction"`/`"business rules"` en un solo término.
+
+---
+
+## 25. Abstract — terminología definitiva y corrección del mecanismo causal (2026-08-10/11)
+
+### 25.1 Búsqueda de vocabulario: "replicative/counterfactual" descartado, se exploran alternativas
+
+El usuario indicó que "replicative"/"counterfactual" (acordado en §18.3) no le convencía.
+Se investigó de nuevo la literatura (búsqueda web dedicada) para nombrar el par
+"solo genera lo visto en el log" vs. "genera comportamiento nuevo":
+
+- **Hallazgo principal**: *generalization* vs. *overfitting* es terminología formal y
+  establecida en process mining — una de las cuatro dimensiones de calidad de Buijs,
+  van Dongen y van der Aalst (2014), *"Quality Dimensions in Process Discovery"*:
+  *"Generalization indicates how well the model can support unforeseen traces."*
+  Sin colisión conocida con vocabulario DECLARE/MINERful.
+- Precedente casi idéntico: *"Adversarial System Variant Approximation to Quantify
+  Process Model Generalization"* (Theis & Darabi, arXiv:2003.12168) — usa un GAN para
+  generar "unseen/unobserved realistic variants" con el propósito explícito de
+  cuantificar *generalization*.
+- Vocabulario operacional del propio CVAE (Graziosi et al., arXiv:2411.02131): hablan
+  de *"trace variants"* y miden en su Tabla III cuántas variantes generadas "already
+  appear in the training or test sets" vs. cuántas son nuevas — concepto paraguas:
+  *"variability"*.
+
+Con esa base se probaron, en orden, tres formulaciones para el abstract:
+1. `generalization` / `overfitting` (respaldo formal fuerte, pero el usuario lo sintió
+   poco natural en prosa).
+2. `generates unseen behavior` / `can only generate seen behavior` (lenguaje llano,
+   sin jerga, sin riesgo de colisión — el paso intermedio).
+3. **`enhancing change` / `restrictive change`** — la formulación final. Antes de
+   fijarla, se le recordó al usuario el hallazgo de §18.3: `"restrictive"` ya tiene un
+   significado distinto y establecido en subsumption DECLARE/MINERful (una restricción
+   es "más restrictiva" cuando acota más el espacio de comportamiento válido — nada
+   que ver con "comportamiento ya visto"). **El usuario, informado del riesgo,
+   decidió proceder de todas formas** (`AskUserQuestion`, opción elegida:
+   "restrictive / enhancing change"). Es una decisión consciente y documentada, no un
+   descuido — si en el futuro un revisor señala esta colisión, la traza de por qué se
+   adoptó a pesar del riesgo conocido está aquí.
+
+Definición fijada la primera vez que aparecen los términos en el abstract (para
+contextualizar al lector, tal como pidió el usuario): *"restrictive changes ---
+reproducing already-observed trace variants --- rather than enhancing changes:
+behavior that is logically valid yet absent from the historical data."*
+
+**Nota sin resolver**: el párrafo 2 sigue usando *"the restriction's operational
+impact"* (refiriéndose a la constraint DECLARE impuesta) — un uso distinto de
+`restrictive change` del párrafo 1. No es la misma colisión que la de DECLARE/MINERful,
+pero son palabras parecidas con significados distintos dentro del mismo abstract;
+queda para la pasada general de consistencia terminológica de §24.4.
+
+### 25.2 Poda de lenguaje decorativo y párrafo de baselines más conciso
+
+A pedido del usuario, se quitaron intensificadores/adjetivos sin contenido a lo largo
+del abstract: `"largely"`, `"variations of"` (redundante junto a "trace variants"),
+`"novel"` (redundante junto a "unseen"/"absent from the historical data"),
+`"synergizes"` → `"combines"`, `"actual"` (what-if scenario), y — de forma notable —
+**`"significantly"`** en "outperforms both baselines", con lo cual de paso queda
+resuelto el pendiente de §24.4 sobre esa frase sin respaldo empírico (ya no reclama
+significancia estadística que no existe todavía).
+
+El párrafo de baselines (antes el más largo, cuatro oraciones) se acortó dos veces a
+pedido explícito del usuario. La simplificación clave: ya no hace falta repetir *por
+qué* cada baseline se evalúa a su nivel (esa lógica quedó establecida en el párrafo 1),
+así que el párrafo 3 solo nombra los dos baselines y a qué nivel se comparan, sin
+reargumentar el motivo. Quedó en dos oraciones, conservando la distinción de los dos
+niveles de evaluación fijada en §24.
+
+### 25.3 Coherencia del párrafo 1: "this same divide" era un salto lógico
+
+El usuario notó que el párrafo 1 mencionaba overfitting/generalización (problema de
+*generación*) y luego saltaba a hablar de simulación como si fuera "la misma
+división" sin haberla planteado antes. Corrección: se sembró la dependencia de la
+simulación respecto a la calidad del log desde la primera oración, y se reemplazó
+`"Existing approaches reflect this same divide"` por `"This generation-level
+limitation carries over into simulation"` — nombra explícitamente que el problema de
+simulación es una *consecuencia* del problema de generación, no el mismo problema.
+
+### 25.4 Verificación técnica: "due to their autoregressive nature" no se sostenía
+
+El usuario pidió una opinión objetiva sobre si es válido atribuir la limitación del
+LSTM a su "naturaleza autoregresiva". Análisis, verificado contra el código real:
+
+- **La generación autoregresiva no es, por sí sola, incapaz de producir secuencias
+  nuevas** — GPT y todo LLM autoregresivo generan constantemente texto nunca visto en
+  entrenamiento. Si "autoregressive nature" fuera la causa, ningún modelo autoregresivo
+  podría generar nada nuevo.
+- **Verificado en el código real** (`GenerativeLSTM/model_prediction/event_log_predictor.py`,
+  traído del submódulo vía GitHub — no está inicializado localmente en este branch,
+  commit `26767476e5b3b31e5cb115fa0ca0d734bfd04195`): la generación **no continúa un
+  prefijo histórico real**. Arranca desde n-gramas en cero y predice paso a paso
+  muestreando de la distribución aprendida (`argmax` o elección aleatoria) — la
+  arquitectura sí podría, en principio, producir secuencias no vistas.
+- **La causa real y defendible es el objetivo de entrenamiento**: maximum-likelihood/
+  teacher-forcing directamente sobre el log histórico, que concentra la distribución
+  aprendida en los patrones más frecuentes — acentuado bajo decodificación greedy/argmax
+  (la variante `'Rules Based Arg Max'` que de hecho usa este pipeline). Fenómeno bien
+  documentado: Holtzman et al., *"The Curious Case of Neural Text Degeneration"*
+  (ICLR 2020) — entrenar/decodificar por máxima verosimilitud produce texto repetitivo
+  y de baja diversidad, incluso en modelos como GPT-2; se soluciona con nucleus
+  sampling, no cambiando la arquitectura.
+- El contraste arquitectónico real y válido contra el GAN no es "autoregresivo vs. no",
+  sino: LSTM predice paso a paso condicionado en el log vía MLE; el GAN genera la traza
+  completa de una vez desde ruido latente, entrenado adversarialmente (no por MLE).
+
+**Corroboración empírica independiente encontrada**: Singh, Bettouche & Fischer
+(ACIT 2024 IEEE), *"Synthetic Training-Data Generation for ML-based Process Mining
+Tools"* — compara LSTM vs. GAN (Transformer encoder) generando logs BPI 2012 y
+helpdesk, sin restricciones DECLARE ni simulación. Tabla III (secuencias únicas):
+LSTM produce muchas menos secuencias genuinamente nuevas que el GAN (BPI: 28 vs. 255;
+helpdesk: 59 vs. 169), y los autores lo describen como *"conservatism... replicating
+existing patterns without much novelty"* vs. *"GAN surpass[ing] LSTM in generating
+diverse and novel data"*. **Buena evidencia empírica corroborante, pero no atribuyen
+esto a "autoregressive nature"** — describen la generación LSTM igual que el código de
+este proyecto (autoregresiva estándar), sin culpar la arquitectura por el
+conservadurismo. Además, reportan que su LSTM llega a loss de entrenamiento/validación
+cercano a cero "indicating effective generalization without overfitting" y aun así es
+conservador — reforzando que la causa es el objetivo de entrenamiento/decodificación,
+no "overfitting" ni "autoregresión" en sí. Matiz honesto a no ignorar: la varianza de
+secuencia del LSTM en ese paper coincide con la varianza real del proceso (fiel), y la
+del GAN la supera (se excede) — no es unilateralmente "LSTM rígido, GAN mejor" en todos
+los ángulos. Otro matiz honesto de los propios autores, útil como gancho para RULE-GAN:
+reconocen que no verificaron si las secuencias nuevas del GAN son *válidas/plausibles*,
+solo que son numéricamente distintas — hueco que el mecanismo DECLARE de RULE-GAN sí
+cierra.
+
+**Corrección aplicada al abstract**: la oración causal del párrafo 1 se reescribió de
+*"Current LSTM-based architectures suffer from structural rigidity due to their
+autoregressive nature"* a *"Current LSTM-based architectures are trained to maximize
+the likelihood of the next activity conditioned on the historical log, which biases
+generation toward frequently observed continuations"* — ata la causa al objetivo de
+entrenamiento (verificado y respaldado por Holtzman et al. 2020 y por el hallazgo
+empírico de Singh et al. 2024), no a la arquitectura autoregresiva en sí.
+
+### 25.5 Abstract — texto final (última versión aprobada por el usuario)
+
+```latex
+What-if process simulation is essential to evaluate the impact of hypothetical changes for process improvement. Current LSTM-based architectures are trained to maximize the likelihood of the next activity conditioned on the historical log, which biases generation toward frequently observed continuations: the resulting synthetic logs are confined to restrictive changes---reproducing only already-observed trace variants---rather than enhancing changes: behavior that is logically valid yet absent from the historical data. This generation-level limitation carries over into simulation: existing approaches that reach full process simulation remain confined to restrictive changes, while approaches capable of enhancing changes validate them only at the log level, without carrying them through to simulation. What remains missing---and what this paper addresses---is an approach that generates enhancing changes and carries them through to a validated process simulation.
+%
+This paper proposes a rule-guided deep learning architecture that combines Generative Adversarial Networks (GANs) with DECLARE declarative constraints: the GAN decouples sequence generation from fixed patterns to foster diversity, while DECLARE constrains the generative space to ensure synthetic traces adhere to the imposed business rules. The resulting synthetic log then feeds a process simulation model, validating the restriction's operational impact as a what-if scenario rather than at the log level alone.
+%
+The proposed framework is benchmarked against a declarative-constraint-guided LSTM generator, compared end-to-end through the simulation pipeline, and a conditional variational autoencoder, compared directly on generated event logs using conformance scores, 2-Gram Distance (2GD), and Relative Event Distribution (RED) with Cycle Time Distribution. Preliminary results on synthetic and real-world event logs show that our approach outperforms both baselines in generating non-repetitive, compliant process behaviors, closing the gap between enhancing changes and validated simulation.
+```
+
+### 25.6 Estado
+
+Abstract aprobado por el usuario en esta forma. Pendientes:
+- Propagar el par `restrictive change`/`enhancing change` (con su definición en la
+  primera aparición) a Introduction/Related Work/Background cuando se revisen a fondo.
+- Resolver el uso duplicado de `"restriction"` (párrafo 2, sentido distinto a
+  `restrictive change`) en la pasada general de consistencia terminológica.
+- Evaluar si citar a Singh et al. (2024) y/o Holtzman et al. (2020) en Related Work /
+  Background como respaldo directo de la premisa del abstract.
+- El resto de pendientes de §23.3/§24.4 sin cambios.
