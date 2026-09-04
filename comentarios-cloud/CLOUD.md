@@ -1551,3 +1551,169 @@ Abstract aprobado por el usuario en esta forma. Pendientes:
 - Evaluar si citar a Singh et al. (2024) y/o Holtzman et al. (2020) en Related Work /
   Background como respaldo directo de la premisa del abstract.
 - El resto de pendientes de §23.3/§24.4 sin cambios.
+
+---
+
+## 26. Búsqueda dirigida de estado del arte (diversidad + expresividad) y cierre de
+    Related Work / CCS (2026-09-03/04)
+
+### 26.1 Contexto
+
+El tutor pidió volver a buscar en el estado del arte enfocándose únicamente en dos
+ejes: diversidad de trazas y expresividad de la condición/restricción impuesta al
+generador. Se diseñó estrategia de búsqueda (dos búsquedas separadas por eje + una
+de intersección) y luego se analizaron varios papers candidatos encontrados por el
+usuario en bases de datos (Scopus/ACM/IEEE/Information Systems).
+
+### 26.2 Estrategia de búsqueda definida
+
+Dos clusters de términos (diversidad: `"trace diversity"`, `"novel/unseen trace
+variant*"`, `"generalization"` + `"process mining"`; expresividad: `"declarative
+process constraint*"`, `"DECLARE constraint*"`, `"conditional/controllable
+generation"`, `"business rule*"`), siempre en AND con un ancla de dominio
+(`"process mining"`/`"event log*"`/`"business process"`) para evitar ruido de otros
+campos. Bases recomendadas: Scopus, Web of Science, IEEE Xplore, ACM DL, Google
+Scholar (búsquedas separadas por eje, no combinadas), más revisión manual de
+venues (BPM, ICPM, CAiSE, ER, *Information Systems*, *Process Science*) porque el
+campo está disperso y varios hallazgos relevantes de esta sesión no aparecerían con
+keyword search solo (preprints de arXiv, journals nuevos).
+
+**Lección de ruido confirmada con un caso real**: Armas-Cervantes, Dumas, La Rosa,
+Maaradji, *"Local Concurrency Detection in Business Process Event Logs"* (ACM TOIT
+2019) — descartado. Es un paper de discovery/conformance (oráculos de concurrencia
+local vs. global), no de generación. Usa **"over-generalization"** de forma
+prominente y cita a van der Aalst et al. 2008 (underfitting/overfitting) — el mismo
+linaje terminológico que ancla el abstract de RULE-GAN — pero en sentido **inverso**
+al deseado: ahí "generalization" es algo a evitar (el oráculo global afirma
+concurrencia sin respaldo), no algo a maximizar. Confirma que `"generalization"` +
+`"process mining"` sin más filtro trae falsos positivos reales, no solo teóricos.
+
+### 26.3 Papers evaluados — veredictos
+
+**Donadello, Maggi, Patrizi, Tessaris, Zorzi (2026), *"Flexible event log
+generation using answer set programming"*, Information Systems 139, 102714
+(`\cite{DONADELLO2026102714}`) — SÍ relevante, incorporado.**
+Generador de logs vía ASP (lenguaje PosLan) diseñado explícitamente para
+diversidad (Sección 4.5, "Controlling the variability") y expresividad más amplia
+que DECLARE (correlaciona control-flow con datos/tiempo). Hallazgo más valioso:
+confirma, desde un paradigma **simbólico** (no neuronal), el mismo fenómeno que
+Holtzman et al. 2020 y Singh et al. 2024 — la heurística de generación *por
+defecto* (aquí, del solver Clingo) produce baja diversidad, hace falta un
+mecanismo dedicado para corregirlo. Tercera confirmación independiente,
+cross-paradigma, del mismo mecanismo.
+- **Autocorrección importante**: se propuso inicialmente marcar a PosLan como
+  `✓ Enhancing Changes` en la Tabla 1, pero el usuario cuestionó el chulo y, al
+  revisar de nuevo, la marca no se sostenía: (a) en su caso de uso principal PosLan
+  genera desde una especificación manual, no desde un log histórico, así que el eje
+  restrictive/enhancing no aplica limpio; (b) en su único experimento que sí parte
+  de un log real (RQ4, minando Declare con RuM/MINERful), hace estructuralmente lo
+  mismo que Dynamics (minar restricciones + generar secuencias nuevas que las
+  satisfagan) — marcarlo distinto sería inconsistente con cómo está marcado
+  Dynamics (`✗ Restrictive Changes`); (c) su métrica de "diversidad" es distancia
+  Hamming/Levenshtein *entre las trazas generadas*, no novedad *respecto al log
+  histórico* (la métrica estilo Tabla III de CVAE) — son conceptos relacionados
+  pero distintos. **Decisión final: no se agregó fila de PosLan a la Tabla 1**
+  (varias columnas de la tabla no aplican bien a su propósito — testing de
+  clasificadores PPM, no simulación de procesos — y forzarlo generaría el mismo
+  tipo de "conceptos metidos con calzador" que los revisores del Paper 1 ya
+  señalaron como problema). Se cita solo en prosa, con una oración breve, como
+  evidencia cross-paradigma del problema de diversidad — ver texto final en §26.4.
+
+**Paper sobre generación/especialización de modelos Declare ground-truth para
+evaluar algoritmos de discovery/conformance (no compartido el nombre exacto en la
+conversación, solo el abstract) — NO relevante para esta búsqueda, pero
+importante para otro propósito.**
+Genera **modelos** Declare sintéticos (no trazas/logs) para benchmarking de
+algoritmos de discovery/conformance checking — unidad de análisis y propósito
+distintos a los de RULE-GAN. Sí trae un hallazgo relevante: usa
+**"specialization"/"generalization"** de modelos Declare en el sentido formal
+exacto de subsumption ya documentado en §18.3 (`ChainSuccession` más restrictiva
+que `Succession`, etc.) — confirma que el riesgo de colisión terminológica con
+"restrictive change"/"enhancing change" (aceptado conscientemente por el usuario
+en §25.1) es real y activo en literatura reciente. **Guardado como candidato de
+cita** para cuando se escriba la nota de desambiguación pendiente (aún no
+redactada) que aclare que "restrictive"/"enhancing" en RULE-GAN se refieren al
+comportamiento generado respecto al log histórico, no a la relación formal de
+subsumption entre modelos Declare.
+
+### 26.4 Related Work — versión final reorganizada en los dos hilos del abstract
+
+El tutor pidió que el Related Work se organizara explícitamente en los dos hilos
+argumentativos del abstract: restrictive changes vs. enhancing changes. Se
+reestructuró moviendo a Dynamics (antes emparejado con CVAE en un párrafo de
+"trade-off") al bloque de los cuatro enfoques restrictivos (Fast Synthetic,
+ProcessGAN, PURPLE, Dynamics), dejando a CVAE como el único caso "enhancing"
+encontrado en la literatura revisada, con el aparte de PosLan en medio como
+evidencia cross-paradigma. Texto final:
+
+```latex
+\section{Related Work}
+\label{sec:relatedWork}
+While approaches such as \cite{spatial-terminal} and \cite{gama} focus on predictive monitoring and trace diagnostics to analyze performance and anomalies respectively, limiting themselves to the current (AS-IS) behavior, generative models enable a valid exploration of the process through the creation of unobserved behaviors.
+
+As summarized in Table \ref{tab:comparison_matrix}, recent literature in the context of synthetic event generation is dominated by approaches whose generative behavior remains \textit{restrictive}, confined to reproducing patterns already present in the historical log. For instance, ProcessGAN \cite{10.1145/3687464} employs a Conditional GAN (CGAN) architecture---combining a Transformer-based generator with a Time-aware Self-attention discriminator---to output privacy-preserving synthetic event logs that replicate underlying data distributions. Conversely, Fast Synthetic \cite{fastSynthetic} utilizes Deterministic Finite Automata (DFA) coupled with graph algorithms to output deterministic synthetic event logs explicitly tailored for system stress testing. Furthermore, PURPLE \cite{purple} relies on Transition Systems to output \textit{as-is} or \textit{to-be} process simulations, depending on the manual adjustment of predefined input parameters. Even \cite{10.7717/peerj-cs.2094}, which combines an LSTM algorithm with a data-driven simulation engine and offers superior expressiveness by formally defining complex logic through manually specified DECLARE constraints, remains restrictive in practice, suffering from the structural rigidity and repetitive outputs typical of standalone LSTM applications. Despite their architectural and expressive differences, these four approaches \cite{10.1145/3687464}, \cite{fastSynthetic}, \cite{purple}, and \cite{10.7717/peerj-cs.2094} share a common limitation: their evaluation of \textit{what-if} scenarios relies on implicit input modifications, intrinsically restricting their generative capabilities to previously observed behaviors.
+
+This diversity problem is not limited to neural architectures. Symbolic approaches based on Answer Set Programming \cite{DONADELLO2026102714} show the same issue: their default search strategy generates traces that are too similar to each other, and dedicated mechanisms are needed to make them more diverse. However, these approaches only generate event logs for testing predictive process monitoring models; they do not address process simulation.
+
+In contrast, only \cite{CVAE} exhibits \textit{enhancing} generative behavior. Its architecture integrates an LSTM with embeddings and linear functions within a Conditional Variational Autoencoder (CVAE) setup. By sampling from a learned latent space rather than continuing observed prefixes, this stochastic approach promotes greater behavioral diversity in event log generation. However, it is constrained to simple binary conditioning, thereby lacking the formal expressiveness required for nuanced \textit{what-if} evaluations, and its evaluation stops at the log level without addressing process simulation.
+
+RULE-GAN closes this gap by combining both threads reviewed above: enhancing generative behavior and formal expressiveness. RULE-GAN builds on Dynamics' existing architecture \cite{10.7717/peerj-cs.2094}, replacing only its restrictive LSTM generator with an enhancing GAN that still follows the same DECLARE rules. This way, RULE-GAN not only generates diverse, previously unseen process behavior, but also measures its real impact on the process, using Dynamics' simulation pipeline, under an imposed rule---closing the loop that \cite{CVAE} leaves open at the log level.
+```
+
+La Tabla 1 (`tab:comparison_matrix`) no cambió de contenido en esta iteración (solo
+se movió su explicación en el texto) y sigue sin fila de PosLan, por lo discutido
+en §26.3.
+
+### 26.5 Categorías CCS 2012 — RULE-GAN
+
+Se descartó `General and reference` (categoría para surveys/material de
+referencia transversal, no para una contribución técnica). Se seleccionaron y
+verificaron dos categorías, generadas con la herramienta oficial de ACM
+(https://dl.acm.org/ccs) para evitar inventar `concept_id`:
+
+```latex
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10010405.10010406.10010412</concept_id>
+<concept_desc>Applied computing~Business process management</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10010147.10010257.10010293.10010294</concept_id>
+<concept_desc>Computing methodologies~Neural networks</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Applied computing~Business process management}
+\ccsdesc[300]{Computing methodologies~Neural networks}
+```
+
+`Business process management` (500, primaria) por ser la contribución de fondo
+(BPM/what-if simulation); `Neural networks` (300, secundaria) por el mecanismo
+técnico central (arquitectura GAN). El `concept_id` de `Neural networks` fue
+generado y confirmado por el usuario directamente con la herramienta oficial de
+ACM — no se inventó ningún valor.
+
+### 26.6 Nota — contenido de GENESIS (Paper 1) mencionado en esta sesión, no documentado aquí
+
+En esta misma sesión el usuario compartió, de paso, una iteración de la
+Introducción y el abstract final de **GENESIS (Paper 1)** — un párrafo puente
+"%%% PROBLEM" agregado entre Context y Related Work (nombrando explícitamente el
+problema de 3 pasos: identificar un cambio candidato, incorporarlo al modelo, y
+evaluar su impacto antes de implementarlo, en vez de prueba y error), y el abstract
+final de GENESIS con estructura de 4 bloques. **Deliberadamente no se documentó ese
+contenido en este archivo**, siguiendo la instrucción explícita del propio
+`CLAUDE.md` de Paper 1: *"No mezclar contexto de ambos papers en el mismo
+repo/documento."* Si se quiere conservar ese hallazgo, debe ir en la bitácora
+propia de Paper 1 (su `CLAUDE.md`), no en este `CLOUD.md` de RULE-GAN.
+
+### 26.7 Estado
+
+Related Work de RULE-GAN reorganizado según pedido del tutor (hilos
+restrictive/enhancing explícitos) y categorías CCS finalizadas y verificadas.
+Pendiente: escribir la nota de desambiguación terminológica "restrictive/enhancing
+change" vs. subsumption Declare (§26.3), y decidir si se agrega la cita del
+paper de especialización de modelos Declare en esa nota.
