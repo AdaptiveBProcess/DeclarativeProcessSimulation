@@ -1,0 +1,107 @@
+<mxfile host="app.diagrams.net">
+  <diagram name="RULE-GAN Pipeline v2" id="rulegan-pipeline-v2">
+    <mxGraphModel dx="1400" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1750" pageHeight="420" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= LEGEND ================= -->
+        <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="0" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_sw1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="50" y="8" width="20" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_t1" value="Input / intermediate / output data" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="76" y="6" width="200" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_sw2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="50" y="32" width="20" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_t2" value="Module reused from Dynamics, unchanged" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="76" y="30" width="210" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_sw3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="50" y="56" width="20" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="legend_t3" value="RULE-GAN contribution (this paper)" style="text;html=1;fontSize=11;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="76" y="54" width="210" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ============== LANE LABELS ============== -->
+        <mxCell id="lbl_lane1" value="AS-IS" style="text;html=1;fontStyle=1;fontSize=13;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="90" width="140" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lbl_lane2" value="WHAT-IF (RULE-GAN)" style="text;html=1;fontStyle=1;fontSize=13;align=left;verticalAlign=middle;fontColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="270" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LANE 1: AS-IS (top) ================= -->
+        <mxCell id="n_eventlog" value="Event log" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="110" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n_simod" value="Discover AS-IS&#10;BPS Model&#10;(SIMOD)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="250" y="100" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n_asis" value="AS-IS BPS Model&#10;(stochastic model +&#10;simulation parameters)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="960" y="110" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ================= LANE 2: WHAT-IF via RULE-GAN (bottom) ================= -->
+        <mxCell id="n_policy" value="Declarative policy&#10;(control-flow change&#10;to be tested)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="290" width="140" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="n_gangen" value="RULE-GAN Generator&#10;(GAN + DECLARE&#10;constraint enforcement)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="250" y="280" width="200" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="n_sequences" value="Synthetic sequences&#10;of activities" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="510" y="295" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="n_stochdiscovery" value="Discover What-if&#10;Stochastic Model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="720" y="285" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n_whatifstoch" value="What-if Stochastic Model&#10;(BPMN TO-BE model +&#10;branch probabilities)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="960" y="295" width="200" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- ================= CONVERGENCE (right) ================= -->
+        <mxCell id="n_merge" value="Merge &amp; Simulate&#10;BPS Models" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1240" y="195" width="180" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="n_metrics" value="What-if&#10;Performance Metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="195" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- ================= EDGES ================= -->
+        <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_eventlog" target="n_simod">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_simod" target="n_asis">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_policy" target="n_gangen">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_gangen" target="n_sequences">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_sequences" target="n_stochdiscovery">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_stochdiscovery" target="n_whatifstoch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_asis" target="n_merge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_whatifstoch" target="n_merge">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;endArrow=block;" edge="1" parent="1" source="n_merge" target="n_metrics">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

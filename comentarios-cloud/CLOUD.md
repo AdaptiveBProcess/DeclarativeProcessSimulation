@@ -1717,3 +1717,308 @@ restrictive/enhancing explícitos) y categorías CCS finalizadas y verificadas.
 Pendiente: escribir la nota de desambiguación terminológica "restrictive/enhancing
 change" vs. subsumption Declare (§26.3), y decidir si se agrega la cita del
 paper de especialización de modelos Declare en esa nota.
+
+---
+
+## 27. Replanteamiento de la problemática (sesiones 2026-09-10 a 2026-10-14)
+
+> ⚠️ **Esta sección invalida partes de §23–§26.** La premisa "el LSTM solo genera
+> comportamiento ya visto (restrictive changes)" es **falsa** según la evidencia
+> revisada (§27.3). La problemática, el abstract y la Tabla 1 se están reescribiendo
+> sobre la base de §27.5. No usar los textos de §25.5/§26.4 sin revisarlos contra esta
+> sección.
+
+> 🔔 **RECORDATORIO — CoSMo (pedido explícito del usuario, 2026-10-14):** CoSMo
+> (Oyamada et al., BPM 2024) **NO** será baseline de la evaluación (decisión del
+> usuario), pero **SÍ debe mencionarse en el Related Work** con una línea que
+> justifique por qué no se compara (no genera timestamps absolutos ni recursos → su
+> salida no puede llevarse a Simod/simulación; se queda en el nivel de traza). Es el
+> competidor más cercano (generador neuronal condicionado con DECLARE): omitirlo es la
+> objeción más probable de un revisor de BPM. Ver §27.4.7.
+
+### 27.1 Entregables intermedios de esta etapa
+
+- **Diagrama del pipeline** (draw.io): `comentarios-cloud/RULE-GAN-pipeline.drawio`
+  (v1, réplica de la Fig. 2 de Dynamics) y `comentarios-cloud/RULE-GAN-pipeline-v2.drawio`
+  (v2, rediseñado para no parecerse al original: dos carriles AS-IS / what-if que
+  convergen; verde = datos, azul = módulos reutilizados de Dynamics, naranja = único
+  módulo nuevo de RULE-GAN). Copias en `Downloads`. LaTeX para insertarlo:
+  `\begin{figure*}... \includegraphics[width=\textwidth]{RULE-GAN-pipeline-v2.png} ...
+  \label{fig:rulegan-pipeline}`.
+- **Estructura acordada del Proposed Approach** (5 subsecciones): 4.1 Overview,
+  4.2 Problem Formalization, 4.3 Trace Generation via GAN, 4.4 Enforcing DECLARE
+  Constraints on Generated Traces, 4.5 From Synthetic Log to Validated What-if
+  Simulation. Se redactó un borrador de 4.1 (declara la relación con Dynamics en la
+  primera oración; módulo ③ reemplazado, ①②④⑤ reutilizados). **Quedó en pausa** por el
+  replanteamiento; su segundo párrafo usa el mecanismo MLE y "confined to restrictive
+  changes", que hay que reescribir.
+- **Arquitectura ganadora confirmada**: V4 (Transformer + Time2Vec + WGAN-GP, sin
+  pérdidas auxiliares), implementada realmente en `GANTrainerV2` (`-m transformer_wgan`).
+  Ver §5–§6 y §11.
+
+### 27.2 Relectura de Dynamics (paper base) y verificación del código
+
+**Hallazgo terminológico**: "restrictive" y "enhancing" son **definiciones del propio
+Dynamics** (Def. 1 y 2) y describen **el cambio pedido respecto al log**, no una
+propiedad del generador. Criterio operativo (derivación nuestra): restrictive = al menos
+una traza del log ya cumple la regla (se podría lograr filtrando el log); enhancing =
+ninguna traza la cumple. Dynamics soporta y evalúa **ambos** tipos.
+
+Clasificación de los cambios evaluados en Dynamics (Tablas 4 y 6):
+
+| Plantilla | Restrictive | Enhancing |
+|---|---|---|
+| Task required | RE `Task C`; PE `Settle Dispute With Supplier`; CDM `Evaluacion curso` | — |
+| Task not allowed | RE `^Task C`; PE `^Ammend RFQ`; CDM `^Cancelar curso` | — |
+| Directly follows | RE `Task B >> Task C`; PE `Send RFQ >> Analyze RFQ`; CDM `Radicar… >> Validar solicitud` | RE `Task A >> Task C`; PE `Choose best option >> Settle Conditions` |
+| Eventually follows | RE `Task A >> * >> Task D`; PE `Create RFQ >> * >> Create Purchase Req.`; CDM `Radicar… >> * >> Visto Bueno…` | RE `Task C >> * >> Task A`; PE `Settle Conditions >> * >> Create Purchase Order` |
+
+Salvedades: `required`/`not allowed` no son restrictive por naturaleza (dependen del
+log); el propio paper se contradice sobre RE ("all changes are assumed as enhancing").
+
+**Interpretación del error 27.4% (restrictive, n=8) vs 28.5% (enhancing, n=4)**: NO es
+cumplimiento de la regla. Es la diferencia relativa entre el cycle time medio simulado
+del modelo generado y el del modelo modificado a mano (ground truth). Reconstrucción:
+|gen − manual| / manual (p.ej. PE: |241.81 − 495.13|/495.13 = 0.51). Métrica gruesa; el
+propio paper propone EMD/MAE. Enhancing **nunca se validó en un log real**.
+
+**Verificación del código** (`GenerativeLSTM/model_prediction/event_log_predictor.py`,
+commit del submódulo `26767476…`, líneas 335–352; leído, no ejecutado): en la variante
+por defecto `Rules Based Random Choice`, la siguiente actividad se elige **uniformemente
+entre las candidatas que cumplen la regla, ignorando las probabilidades del LSTM**;
+`evaluate_condition_list` evalúa si el prefijo **ya** satisface la regla, así que tras
+cumplirla casi todo es candidato. Lectura (por confirmar): después de cumplir la regla el
+control-flow sería casi una caminata aleatoria. **Esto corrige parcialmente §25.4**, que
+solo verificó la ruta sin reglas.
+
+**Implicación para nuestros experimentos**: la regla usada en RunningExample (§5) la
+cumple el 77.25% de las trazas de train → es un cambio **restrictive**. **Ningún
+experimento nuestro ha probado todavía un cambio enhancing.**
+
+### 27.3 Hallazgo que reformula el gap: novedad vs. validez
+
+Tabla III de CVAE (Graziosi et al. 2024): el baseline LSTM (DeepGenerator, Camargo 2019,
+base del generador de Dynamics) genera **casi solo variantes nuevas**, mientras que del
+15% al 77% de las variantes de CVAE ya están en train. Pero CVAE tiene **5% a >30% más
+conformidad (CONF)** y mejor RED/CTD/2GD (su Fig. 2). Matiz: en Sepsis casi toda traza es
+única, pero en Traffic Fines (200 variantes) el patrón se mantiene (LSTM 6% en train vs
+CVAE 77%).
+
+**Conclusión**: el LSTM **sí** genera comportamiento nuevo (contra la premisa anterior),
+pero de **menor calidad** (menos conforme y menos fiel). El gap defendible es un
+**trade-off novedad–validez**, no "el LSTM no genera comportamiento nuevo". Con la
+definición propia de enhancing change ("logically valid yet absent from the historical
+data"), el comportamiento nuevo pero inválido no cuenta como enhancing: es ruido.
+
+Cautela: la baja conformidad está medida por CVAE sobre el LSTM **sin restricciones**, no
+sobre el LSTM de Dynamics → hay que confirmarla con nuestro propio diagnóstico.
+
+### 27.4 Estado del arte revisado paper por paper (con correcciones a la Tabla 1)
+
+Preguntas aplicadas a cada uno: entrada, salida, tecnología, dimensiones, ¿genera
+comportamiento y de qué tipo?, métricas, analítica, aplicaciones.
+
+**27.4.1 Fast Synthetic (Bergami, GRADES-NDA 2023).** Entrada: modelo Declare
+data-aware (12 plantillas) + nº de trazas y longitudes; **no usa log**. Tecnología:
+autómatas (LTLf→DFA vía FLLOAT, poda, join conjuntivo de grafos) + recorrido
+BoundedBFS/FastDepthGT con Min Coin Change. Salida: log XES/TSV sin timestamps ni
+recursos. Métricas: solo tiempo de ejecución. Analítica: ninguna. Aplicaciones: probar
+algoritmos de minería (ground truth conocido), análisis visual, conformance
+probabilístico. **Correcciones**: el Related Work dice "deterministic" y "stress testing"
+(falso); en la Tabla 1 `Expressiveness ✗` es incorrecto (su entrada ES Declare) y
+`Behavior: Restrictive` no aplica (no aprende de un log).
+
+**27.4.2 ProcessGAN (Li et al., ACM TKDD 2024).** Entrada: log real para entrenar; para
+generar, ruido + duración total. Tecnología: CGAN con generador Transformer **no
+autorregresivo**, discriminador con self-attention temporal, Gumbel-softmax, pérdidas
+auxiliares. Salida: actividad + timestamp por evento + atributos de caso regenerados;
+sin recursos. Métricas: estadísticas, clasificador de realismo, revisión experta; **no**
+mide conformidad, novedad ni privacidad. No anonimiza atributos: genera desde ruido y
+argumenta privacidad **sin evaluarla** (riesgo de memorización; las duraciones se copian
+del log real). Inicio absoluto = momento de ejecución del modelo. **Correcciones**: no
+evalúa what-if (no debe agruparse en "evaluación de what-if por modificaciones
+implícitas"); `Behavior: Restrictive` no es defendible (afirma lo contrario); "privacy-
+preserving" → "aimed at privacy-preserving". Es el precedente más cercano a nuestro
+generador (Transformer no autorregresivo desde ruido).
+
+**27.4.3 PURPLE (Burattin, Re, Rossi, Tiezzi — DKE 161, 2026).** Entrada: modelo BPMN
+o Petri + parámetros del "propósito"; **no usa log**. Tecnología: métodos formales —
+simulación guiada sobre un LTS construido desde la semántica formal, con log evaluator
+(genera "pistas") y trace evaluator. Salida: **solo log sintético** (nombres de
+actividad; timestamps = momento de registro). Métricas: cumplimiento del propósito
+(cobertura de relaciones, error de frecuencias, MAE de probabilidades de ramificación,
+% de ruido, costo de alineamiento) + tiempo. Analítica: ninguna propia. Aplicaciones:
+validar y comparar algoritmos de descubrimiento, conformance y what-if por probabilidades
+de ramificación. **Correcciones (confirman la nota de baja confianza de §23.2)**: el
+Related Work dice "outputs as-is or to-be process simulations" (falso); Tabla 1:
+`PSM ✓asis/✓tobe` → ✗, `Synthetic Log ✗` → ✓, `Flow/Resources` → Flow (+ costo).
+
+**27.4.4 CVAE (Graziosi et al., arXiv 2411.02131, 2024; extensión en Process Science
+2, art. 8, 2025).** Entrada: log + etiqueta binaria por traza calculada del log (p.ej.
+reingreso en Sepsis, apelación en Traffic Fines). Tecnología: CVAE con encoder/decoder
+LSTM (seq2seq); decoder autorregresivo con argmax, variabilidad desde el espacio latente.
+Salida: log con actividades, timestamps y atributos de traza; sin recursos ni KPIs.
+Métricas: RED, CTD, 2GD, CONF (solo sobre variantes nuevas), variantes en train/test,
+tasa condicional. Analítica: ninguna sobre el proceso; what-if solo como ejemplo
+cualitativo. **Correcciones**: "sampling from a latent space rather than continuing
+observed prefixes" es impreciso; "Predictive" es discutible.
+
+**27.4.5 PosLan (Donadello et al., Information Systems 139, 2026)** — ya citado (§26.3).
+Entrada: modelo PosLan especificado a mano. Tecnología: ASP + Clingo. Salida: log
+etiquetado (positivo/negativo). Métricas: tiempo, F1 de clasificadores PPM, variabilidad
+Hamming/Levenshtein. Polo opuesto al LSTM: conforme por construcción, sin aprendizaje ni
+simulación. Se mantiene solo en prosa.
+
+**27.4.6 DeepSimulator (Camargo, Barón, Dumas, González-Rojas — Information Systems
+117, 2023).** Antecesor directo de Dynamics (mismo grupo). Entrada: log real; what-if
+editando el modelo descubierto (llegadas, orden, ramificación, quitar/**agregar
+actividades** vía embeddings). Tecnología: híbrida — Split Miner + BPMN estocástico
+para el control-flow, Prophet para llegadas, dos LSTM para tiempos de procesamiento y
+espera. Salida: modelo de simulación híbrido + log simulado (actividad, inicio, fin).
+Métricas: MAE de cycle time, EMD, AHT-EMD, DTW. Analítica: predictiva/what-if.
+**Decisión**: no va en la Tabla 1 (fila casi igual a Dynamics). Recomendación: una
+oración en el texto — **delega el control-flow a un modelo de procesos y usa DL solo para
+tiempos**, lo que respalda implícitamente que el control-flow generado por LSTM no es
+confiable.
+
+**27.4.7 CoSMo (Oyamada, Tavares, Barbon Junior, Ceravolo — BPM 2024, LNCS 14940,
+pp. 328–344; arXiv 2303.17879; código `raseidi/cosmo`).**
+- Entrada: log real; se descubren reglas DECLARE (Declare4Py) y cada traza lleva un
+  **vector binario Φ** (1 = cumple la regla). Para simular se toman los Φ del test y se
+  **invierten** las reglas a cambiar (recetas reales + bit cambiado: mantiene realismo y
+  diversidad). En los experimentos la selección de reglas es **automática** (cuartiles
+  de frecuencia; Existence, Exclusive Choice, Chain Response + relacionadas; excluyen
+  Negative Relations para evitar contradicciones). No hay interfaz de usuario descrita.
+- Tecnología: **RNN condicionada** (parámetro aprendible K que liga Φ a la secuencia +
+  residual), autorregresiva; **la condición se aprende en el entrenamiento** (a
+  diferencia de Dynamics, que filtra en la decodificación).
+- Salida: trazas (actividad + tiempo restante). **Sin timestamps absolutos, recursos,
+  modelo de simulación ni KPIs.** El propio paper: "sequence prediction ... similar to,
+  but not synonymous with, simulation".
+- Métricas: weighted precision del cumplimiento de reglas (mediana Vanilla 58%, Original
+  99%, Inverted 81%; Positive Relations cumplidas 0.65; cae fuerte en BPI17); MAE del
+  tiempo restante (pérdida de entrenamiento). No mide novedad ni fidelidad.
+- Limitaciones relevantes: el analista no fija un % de trazas que cumplan (Dynamics sí:
+  `new_prop_cases`); solo puede invertir reglas **ya descubiertas** en el log
+  (inferencia: no permite imponer una regla nunca observada); las reglas invertidas en
+  su evaluación tienen frecuencia intermedia en el log → serían restrictive.
+- Fila propuesta para Tabla 1 (si se incluye): Behavior ✗ (no medido; reglas
+  observadas) · Expressiveness ✓ Declare (descubiertas) · Flow/Time · PM ✗ · PSM ✗ ·
+  Synthetic Log ✓ (sin timestamps absolutos) · Predictive (nivel de traza).
+- Nota: el ejemplo de su §4.3 tiene una inconsistencia (Existence(a) repetido; dice
+  invertir Existence(c) pero invierte la 2.ª columna).
+
+**Papers descartados en esta etapa**: Steady-state detection (no aplica a validez;
+posible referencia para evaluación de simulación — período warm-up).
+
+### 27.5 Problemática acordada (2026-10-14)
+
+1. **Limitación de generación (novedad vs. validez)**: los generadores LSTM producen
+   comportamiento nuevo, pero con baja conformidad con las restricciones implícitas del
+   proceso (parte de lo "nuevo" es ruido). Refs: CVAE (Tabla III, Fig. 2); Singh et al.
+   2024 (§25.4).
+2. **Limitación de condicionamiento**: los generadores profundos tienen capacidad
+   limitada para adaptar la distribución aprendida a condiciones específicas. Refs
+   verificadas (§27.6): CVAE, DeepSimulator, CoSMo.
+3. **Limitación de evaluación (simulación)**: los enfoques con mejor generación (CVAE,
+   ProcessGAN, PosLan) se quedan en el nivel de log; los que simulan (Dynamics,
+   DeepSimulator) dependen de un LSTM poco conforme o de un modelo de procesos rígido.
+   Refs: PURPLE, ProcessGAN, Fast Synthetic.
+
+**Gap**: no existe un enfoque que genere comportamiento **nuevo y válido**,
+**condicionado por una regla declarativa**, y que lo lleve hasta una **simulación
+validada**. (Dynamics condiciona y simula con LSTM poco conforme; CoSMo condiciona pero
+se queda en el log; CVAE es más conforme pero con condición binaria y sin simulación.)
+
+⚠️ **Frase descartada, NO usar**: "no approach learns to generate behavior conditioned on
+expressive declarative constraints" — CoSMo lo hace.
+
+### 27.6 Respaldo bibliográfico de la limitación 2 (citas textuales verificadas)
+
+- **CVAE** (abstract): *"current DL generative models are limited in their ability to
+  adapt the learned distributions to generate data samples based on specific conditions
+  or attributes."* Respaldo empírico propio: Tabla IV (lstm2 en Sepsis: 38.3% vs 14.8%).
+  Nota: CVAE no cita trabajos que demuestren la limitación; la afirma y la apoya en
+  [13] Camargo 2021 (solo clasificación de familias), [16] Sohn 2015 y evidencia por
+  ausencia (Tax 2017, Evermann 2017, Lin 2019, Mehdiyev 2017, Tax 2018, Camargo 2019,
+  Taymouri 2020 — todos generan por prefijo sin condición).
+- **DeepSimulator** (abstract): *"The drawback of DL models is that users cannot alter
+  them for what-if analysis due to their black-box nature."*
+- **CoSMo** (§1): DL models are *"often seen as black boxes, with no options for users to
+  influence the simulation results"*; (§3) *"the complete dependence on randomness limits
+  the flexibility of the user to control the simulated behaviors."* CoSMo atribuye la
+  limitación a **Dumas (2021)**, "Constructing digital twins for accurate and reliable
+  what-if business process analysis", BPM Workshops, CEUR 2938, pp. 23–27 — **no
+  verificado por nosotros**.
+- **No verificados / no usar como respaldo textual**: Camargo et al. 2021 PeerJ (su
+  abstract no afirma la limitación); RIMS (Meneghello et al., ICPM 2023; texto no
+  accesible); Mirza & Osindero 2014 (frase "no control on modes" no confirmada).
+
+### 27.7 Búsqueda dirigida "validez del comportamiento generado" (pregunta 1)
+
+Clusters: A) validez/conformidad, B) mecanismo de restricción (constrained generation,
+constrained decoding, background/a-priori knowledge, DECLARE, LTLf), C) generación de
+trazas (incluye suffix prediction y counterfactual), siempre con ancla de dominio.
+**ScienceDirect**: máximo 8 operadores booleanos por campo, sin comodines; usar el campo
+"Title, abstract or author-specified keywords" con consultas cortas (4 consultas
+propuestas en la conversación). ScienceDirect solo cubre Elsevier → usar Scopus/Google
+Scholar para Springer (BPM, CAiSE, ICPM, Process Science). Candidatos por verificar:
+Di Francescomarino et al. BPM 2017 ("An eye into the future"); Buliga et al. CAiSE 2023
+("Counterfactuals and ways to build them").
+
+### 27.8 Abstract en reescritura (versión parcial, 2026-10-14)
+
+```latex
+%%% CONTEXTO ACTUAL
+Event logs only record behavior that has already occurred, whereas evaluating a process change before its implementation requires behavior that has not. Trace generation bridges this gap, making it a key enabler of what-if process simulation in Business Process Management.
+%%% RELATED WORK
+Existing log generators serve diverse purposes, including data augmentation, privacy-preserving data sharing, benchmarking of process mining techniques, and the exploration of what-if scenarios. Among them, LSTM-based generators produce previously unseen behavior, but of lower quality, both in its compliance with process constraints and in its control-flow and temporal fidelity, while deep generative models in general remain limited in their ability to adapt the learned distribution to specific conditions.
+%%% GAP
+What is missing is an approach that generates new and valid behavior, conditioned on an imposed control-flow change, and carries it through to the evaluation of its impact on process performance.
+```
+
+Notas: "of lower quality" es comparativo a propósito (la evidencia de CVAE es relativa).
+Pendiente: contribución, validación y resultados (~110 palabras disponibles para un
+abstract de ~250).
+
+### 27.9 Diseño de validación (acordado a alto nivel; se pule después)
+
+- **Dos niveles**: (1) log generado — RED, CTD, 2GD, CONF; (2) simulación — impacto en
+  métricas what-if.
+- **Baselines**: CVAE y Dynamics. **CoSMo no se incluye** (decisión del usuario; ver
+  recordatorio al inicio de §27).
+- Propuestas pendientes de decidir al pulir la metodología:
+  - agregar métricas de **cumplimiento de la regla**, **novedad** (variantes ausentes de
+    train/test) y **novedad válida** (CONF solo sobre variantes nuevas) — sin ellas los
+    resultados no sostienen la contribución;
+  - separar (a) reproducción AS-IS (fidelidad vs. test) de (b) generación condicionada
+    (RED/CTD/2GD vs. test no aplican; CONF debe excluir las reglas minadas que
+    contradicen el cambio impuesto);
+  - replicar el protocolo de Dynamics (RE y PE, mismos 6 cambios, modelo manual como
+    verdad de referencia; error de cycle time + EMD/MAE);
+  - pasar el log de CVAE por el mismo pipeline Simod + simulación (aísla el efecto del
+    generador);
+  - **protocolo hold-out** para enhancing changes con verdad de referencia real (retirar
+    del entrenamiento las trazas que cumplen una regla y pedir al generador que las
+    produzca);
+  - restrictive vs. enhancing por separado, con el baseline trivial de filtrar el log
+    para restrictive; ablación del GAN sin DECLARE; réplicas + prueba no paramétrica.
+
+### 27.10 Decisión de diseño abierta (bloquea 4.4 del Proposed Approach)
+
+Cómo impone RULE-GAN la regla DECLARE: (a) filtrado posterior sobre trazas generadas
+(un revisor lo verá menos sofisticado que CoSMo, que aprende la condición), o (b) GAN
+condicional con Φ como entrada. Decidir antes de redactar 4.4.
+
+### 27.11 Pendientes
+
+1. 🔔 Mencionar CoSMo en el Related Work y justificar su exclusión como baseline.
+2. Corregir Related Work y Tabla 1 según §27.4 (Fast Synthetic, ProcessGAN, PURPLE,
+   CVAE).
+3. Terminar el abstract (contribución, validación, resultados).
+4. Reescribir el 2.º párrafo del Overview (4.1).
+5. Decidir §27.10.
+6. Diagnóstico propio del LSTM de Dynamics: % de variantes nuevas, CONF sobre variantes
+   nuevas, cumplimiento de la regla, RED/CTD/2GD, en RE y PE, contra el GAN.
+7. Definir reglas enhancing (soporte 0% en el log) para cada log de evaluación.
+8. Pendientes previos de §26.7 (nota de desambiguación terminológica).
