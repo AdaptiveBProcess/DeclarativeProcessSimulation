@@ -38,10 +38,24 @@ def test_parse_any_of(tmp_path):
     assert rules['path'] == ['Appeal to Judge', 'Send Appeal', 'C']
 
 
-def test_parse_min_occurrences(tmp_path):
-    rules = te.extract_rules(write_ini(tmp_path, 'path = O_CREATED-COMPLETE\nmin_occurrences = 2'))
+def test_parse_at_least(tmp_path):
+    rules = te.extract_rules(write_ini(tmp_path, 'at_least = O_CREATED-COMPLETE\nmin_occurrences = 2'))
     assert rules['rule'] == 'atleast_2'
     assert rules['path'] == ['O_CREATED-COMPLETE']
+
+
+def test_required_is_not_confused_with_at_least(tmp_path):
+    # path = A alone stays 'required'; path + min_occurrences (old syntax) is rejected
+    assert te.extract_rules(write_ini(tmp_path, 'path = O_CREATED-COMPLETE'))['rule'] == 'required'
+    with pytest.raises(ValueError):
+        te.extract_rules(write_ini(tmp_path, 'path = O_CREATED-COMPLETE\nmin_occurrences = 2'))
+
+
+def test_exactly_one_rule_key(tmp_path):
+    with pytest.raises(ValueError):
+        te.extract_rules(write_ini(tmp_path, 'path = A\nany_of = B ; C'))
+    with pytest.raises(ValueError):
+        te.extract_rules(write_ini(tmp_path, 'at_least = A\nmin_occurrences = 2\nany_of = B ; C'))
 
 
 def test_parse_existing_templates_unchanged(tmp_path):
@@ -52,11 +66,13 @@ def test_parse_existing_templates_unchanged(tmp_path):
     assert te.extract_rules(write_ini(tmp_path, 'path = A >> C'))['rule'] == 'directly'
 
 
-def test_parse_min_occurrences_rejects_invalid(tmp_path):
+def test_parse_at_least_rejects_invalid(tmp_path):
     with pytest.raises(ValueError):
-        te.extract_rules(write_ini(tmp_path, 'path = A >> B\nmin_occurrences = 2'))
+        te.extract_rules(write_ini(tmp_path, 'at_least = A >> B\nmin_occurrences = 2'))
     with pytest.raises(ValueError):
-        te.extract_rules(write_ini(tmp_path, 'path = A\nmin_occurrences = 0'))
+        te.extract_rules(write_ini(tmp_path, 'at_least = A\nmin_occurrences = 0'))
+    with pytest.raises(ValueError):
+        te.extract_rules(write_ini(tmp_path, 'at_least = A'))
 
 
 # --- evaluate_condition (DataFrame, used by the GAN) -----------------------

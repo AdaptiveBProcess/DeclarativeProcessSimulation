@@ -2100,7 +2100,11 @@ espera ≤ 28 días desde el evento anterior (temporal → fuera de alcance).
 ### 28.4 Nuevas plantillas DECLARE implementadas (código)
 
 En `support_modules/traces_evaluation.py`:
-- **Existence(n)**: `rules.ini` con `path = A` + `min_occurrences = n` → `rule = 'atleast_<n>'`.
+- **AtLeast / Existence(n)**: `at_least = A` + `min_occurrences = n` → `rule = 'atleast_<n>'`.
+  Clave propia (no `path`) para que nunca se confunda con `required` (`path = A`).
+  Guardas en `extract_rules`: el archivo debe tener **exactamente una** de `path` / `any_of` /
+  `at_least`; `min_occurrences` solo es válido junto a `at_least` (la sintaxis vieja
+  `path = A` + `min_occurrences` ahora da error); `at_least` nombra una sola actividad; `n ≥ 1`.
 - **Choice-of-set**: `any_of = A ; B ; C` → `rule = 'any_of'` (separador `;` porque `|`
   ya es precedence).
 - `n` viaja dentro del nombre de la regla para **no cambiar la firma** de
@@ -2118,12 +2122,47 @@ Los experimentos previos de RunningExample no se ven afectados (su regla es coex
 required, cuya lógica coincide).
 
 **Validación**:
-- `validation/test_plantillas_declare.py`: 21 pruebas unitarias (parser, ambas plantillas
-  en las dos funciones, regresión de plantillas existentes, arreglo del entrenador) →
-  21/21 pasan (`python -m pytest validation/test_plantillas_declare.py`).
+- `validation/test_plantillas_declare.py`: 23 pruebas unitarias (parser y guardas de
+  `at_least`, ambas plantillas en las dos funciones, regresión de plantillas existentes,
+  arreglo del entrenador) → 23/23 pasan (`python -m pytest validation/test_plantillas_declare.py`).
 - `validation/validar_plantillas_vs_cvae.py` + `validation/rules_cvae/*.ini`: aplicado a
   los TEST de CVAE → **100% de coincidencia** con su columna `label` en BPIC2012_A
-  (937 casos, 19.32%), BPIC2012_B (937, 26.04%) y Traffic Fines (6480, 3.60%).
+  (937 casos, 19.32%), BPIC2012_B (937, 26.04%, ya con la sintaxis `at_least`) y Traffic
+  Fines (6480, 3.60%).
+- Los `rules.ini` existentes del proyecto (RunningExample, PurchasingExample,
+  BPI_Challenge_2012, bpic2012_a) se siguen parseando igual.
+
+### 28.4.1 Las 10 reglas soportadas (8 originales + 2 nuevas)
+
+Ejemplos verificados contra el código (A–E actividades genéricas). Tabla descargable con
+el mismo contenido: `RULE-GAN_reglas_DECLARE.xlsx` (Descargas del usuario).
+
+| # | Regla | `rules.ini` | Se cumple si… | DECLARE | Cumple / No cumple |
+|---|---|---|---|---|---|
+| 1 | required | `path = B` | B ocurre | Existence | ⟨A,B,E⟩ / ⟨A,C,E⟩ |
+| 2 | not_allowed | `path = ^D` | D no ocurre | Absence | ⟨A,B,C,E⟩ / ⟨A,B,D,E⟩ |
+| 3 | directly | `path = A >> C` | A ocurre y al menos una vez C la sigue inmediatamente | ≈ ChainResponse existencial | ⟨A,C,E⟩ / ⟨A,B,C,E⟩ |
+| 4 | eventually | `path = A >> * >> E` | A ocurre y cada A va seguida más adelante por E | Response no vacua | ⟨A,B,C,E⟩ / ⟨A,B,E,A⟩ |
+| 5 | precedence | `path = B >> \| >> C` | C ocurre y B ocurre antes | Precedence no vacua | ⟨A,B,C,E⟩ / ⟨A,C,B,E⟩ |
+| 6 | succession | `path = B >> # >> C` | ambas ocurren, B antes que C y nunca C antes que B | Succession no vacua | ⟨A,B,C,E⟩ / ⟨A,C,B,E⟩ |
+| 7 | coexistence | `path = B >> + >> C` | B y C ocurren ambas | ≈ CoExistence | ⟨A,B,C,E⟩ / ⟨A,B,E⟩ |
+| 8 | NotChainSuccession | `path = B >> - >> C` | B ocurre y nunca va seguida inmediatamente por C | NotChainSuccession no vacua | ⟨A,B,D,C,E⟩ / ⟨A,B,C,E⟩ |
+| 9 | at_least (nueva) | `at_least = B` + `min_occurrences = 2` | B ocurre ≥ 2 veces | Existence(n) / AtLeast | ⟨A,B,C,B,E⟩ / ⟨A,B,C,E⟩ |
+| 10 | any_of (nueva) | `any_of = C ; D` | ocurre C o D | Choice (1 de k) | ⟨A,B,D,E⟩ / ⟨A,B,E⟩ |
+
+Diferencias con DECLARE estándar (documentarlas en la subsección *Change specification*):
+- **No vacuidad**: eventually, precedence, succession y NotChainSuccession no se cumplen si
+  no ocurre su actividad de activación (⟨B,C,E⟩ no cumple eventually(A,E)).
+- **coexistence exige ambas**: DECLARE también la da por cumplida si no ocurre ninguna
+  (⟨A,E⟩ aquí no cumple).
+- **directly es existencial**: basta una A seguida de C (⟨A,C,A,E⟩ cumple aquí; no cumple
+  ChainResponse).
+- **precedence/succession sobre el grafo de secuencia directa**: con repeticiones
+  precedence puede ser más permisiva (⟨C,B,C⟩ cumple precedence(B,C)) y succession más
+  estricta (⟨B,C,B,C⟩ no cumple succession(B,C)) que DECLARE.
+- **`variation`**: la ruta LSTM la aplica (`+x`, `-x`, `=x` sobre la proporción de train);
+  la ruta GAN (`dg_prediction.py`, `call_predict_gan`) la ignora y usa la proporción de
+  train → pendiente conectarla si el piloto necesita fijar la proporción de CVAE.
 
 ### 28.5 Advertencias de entorno
 

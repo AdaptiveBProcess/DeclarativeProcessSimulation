@@ -30,6 +30,31 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     settings['variation'] = config['RULES']['variation'][0] if 'variation' in options else None
     settings['prop_variation'] = float(config['RULES']['variation'][1:]) if 'variation' in options else None
 
+    rule_keys = [key for key in ('path', 'any_of', 'at_least') if key in options]
+    if len(rule_keys) != 1:
+        raise ValueError(f"{path} must define exactly one of 'path', 'any_of' or 'at_least' (found {rule_keys})")
+
+    # AtLeast(A, n): "at_least = A" + "min_occurrences = n" -> A occurs at least n times.
+    # It has its own key so that it can never be mistaken for 'required' (path = A).
+    # n travels inside the rule name so that evaluate_condition(_list) keep their
+    # signature (the LSTM predictor in the GenerativeLSTM submodule calls them).
+    if 'at_least' in options:
+        activity = config['RULES']['at_least'].strip()
+        if not activity or '>>' in activity or ';' in activity:
+            raise ValueError(f"'at_least' in {path} must name a single activity")
+        if 'min_occurrences' not in options:
+            raise ValueError(f"'at_least' in {path} requires 'min_occurrences'")
+        n = int(config['RULES']['min_occurrences'])
+        if n < 1:
+            raise ValueError(f"'min_occurrences' in {path} must be >= 1")
+        settings['path'] = [activity]
+        settings['rule'] = f'atleast_{n}'
+        if verbose:
+            print("\n", "### Rules path: ", settings['path'], "###", "\n")
+        return settings
+    if 'min_occurrences' in options:
+        raise ValueError(f"'min_occurrences' in {path} is only valid together with 'at_least'")
+
     # Choice-of-set: "any_of = A ; B ; C" -> at least one of the activities occurs.
     # ';' is used because '|' already denotes precedence in the 'path' syntax.
     if 'any_of' in options:
@@ -70,15 +95,6 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     settings['path'] = [x.replace('^', '') for x in settings['path'] if x != '*']
     #eliminar elemento "|","#","+","-"
     settings['path'] = [x for x in settings['path'] if x not in ['|', '#','+',"-"]]
-
-    # Existence(n): "path = A" + "min_occurrences = n" -> A occurs at least n times.
-    # n travels inside the rule name so that evaluate_condition(_list) keep their
-    # signature (the LSTM predictor in the GenerativeLSTM submodule calls them).
-    if 'min_occurrences' in options:
-        n = int(config['RULES']['min_occurrences'])
-        if n < 1 or len(settings['path']) != 1:
-            raise ValueError(f"'min_occurrences' in {path} needs n >= 1 and a single activity in 'path'")
-        settings['rule'] = f'atleast_{n}'
     return settings
 
 
