@@ -2022,3 +2022,126 @@ condicional con Φ como entrada. Decidir antes de redactar 4.4.
    nuevas, cumplimiento de la regla, RED/CTD/2GD, en RE y PE, contra el GAN.
 7. Definir reglas enhancing (soporte 0% en el log) para cada log de evaluación.
 8. Pendientes previos de §26.7 (nota de desambiguación terminológica).
+
+---
+
+## 28. Paper completo hasta Related Work, opción (d) y nuevas plantillas DECLARE (2026-10-15)
+
+### 28.1 Estado del paper
+
+Según el usuario, quedaron terminados abstract, introducción, background y related work
+(texto final en el `.tex`, no copiado aquí). Decisiones de redacción tomadas en esta etapa:
+- Abstract en bloques: contexto (los logs solo registran lo ocurrido; generar trazas es
+  clave para what-if), related work (usos de generadores; LSTM con comportamiento nuevo
+  "of lower quality"; capacidad limitada de condicionamiento), gap ("new and valid
+  behavior, conditioned on an imposed control-flow change, carried through to the
+  evaluation of its impact"), contribución (RULE-GAN reemplaza el generador LSTM de un
+  pipeline what-if existente; "aims to favor new yet plausible behavior"), validación (dos
+  niveles: log generado y simulación; baselines LSTM declarativo y CVAE).
+- Introducción: BPM → generación de trazas y por qué importa su calidad en what-if
+  (restrictive/enhancing definidos citando a Dynamics) → un párrafo con las tres
+  limitaciones → gap + relación con Dynamics → propuesta con 4 etapas (change
+  specification, adversarial training, guided generation, what-if simulation) → resultados
+  abiertos → organización.
+- Singh et al. (2024) se cita **solo** por la mayor diversidad del GAN; no respalda que el
+  LSTM sea de baja calidad (dice lo contrario).
+- Related Work en tres párrafos (no llegan a simulación; calidad; generación condicionada)
+  + posicionamiento. **CoSMo quedó citado con la justificación de por qué no es baseline**
+  (no genera timestamps absolutos ni recursos).
+- Tabla 1 en LaTeX transcrita tal como la dejó el usuario; correcciones de contenido
+  pendientes (ver §27.4 y la revisión de la conversación: Fast Synthetic sí recibe Declare;
+  dimensiones; "Generation quality" con valores ✓/✗/—; Rule-GAN ✓ es hipótesis).
+- Referencias nuevas verificadas o con BibTeX entregado: Dumas et al. 2018, van der Aalst
+  2015 (survival guide, @incollection), Camargo 2020 (Simod), DeepSimulator 2023, Camargo
+  2019 (LSTM), Camargo 2021 (PeerJ), CoSMo 2024, PALSYN 2025, Sommers et al. 2025,
+  Padella et al. 2025 (arXiv), Tax 2017, Evermann 2017, Taymouri 2020, Singh 2024 (datos
+  por completar).
+- Paper nuevo detectado, por leer: **PNC-SYN** (Kuhn, Trinh, Grüger, Bergmann — CAiSE 2026
+  Workshops): generador autorregresivo restringido en cada paso por una red de Petri.
+
+### 28.2 Proposed Approach — módulos y decisión de diseño
+
+Módulos acordados (alineados con las 4 etapas de la introducción): 4.1 Overview,
+4.2 Problem statement, 4.3 Change specification (heredado), 4.4 Adversarial training
+(nuevo), 4.5 Guided generation (nuevo), 4.6 What-if simulation (heredado).
+
+**Hallazgo en `gan_predictor.py`**: la regla se impone por **muestreo con rechazo**
+(presupuesto 10× casos). Funciona para restrictive changes, pero **falla para enhancing**:
+un GAN entrenado donde la regla nunca se cumple casi nunca la genera.
+
+**Opción adoptada por el usuario: (d) híbrida** — ajuste fino del generador con
+`L_G = L_adversarial + λ·L_regla(φ)` (violación esperada de la regla calculada sobre las
+salidas softmax del generador, p.ej. directly follows Σ_t p_t(A)(1−p_{t+1}(B)); existence
+−log[1−∏_t(1−p_t(A))]) + rechazo final con `evaluate_condition` para cumplimiento exacto.
+Generador base para la fracción sin cambio y generador ajustado para la fracción con cambio.
+Riesgos: tensión crítico-regla (elegir λ con curva cumplimiento–plausibilidad),
+aproximación de independencia, colapso de modos. Literatura a revisar: "semantic loss"
+(Xu et al., ICML 2018) y "Definitely Maybe: Neuro-Symbolic PPM with Probabilistic
+Declarative Knowledge" (DOI 10.1145/3810944).
+
+Por confirmar en código: según la Fig. 2 de Dynamics, la simulación usa solo las
+secuencias de actividades del log generado (tiempos/recursos vienen del AS-IS de Simod).
+
+### 28.3 Repositorio de CVAE (`rgraziosi-fbk/cvae-process-mining`)
+
+Contiene: datasets preprocesados con split TRAIN/VAL/TEST y columna `label`
+(`deviant` = condición verdadera); pesos entrenados (ICPM 2024 y Process Science);
+valores crudos de métricas por corrida (10 corridas: CONF, 2GD, RED, CTD, AED por
+full/deviant/regular); scripts de evaluación; **un solo** log generado de ejemplo por
+dataset (no los 10). Generan con la proporción de entrenamiento (Sepsis: 14.6% generado vs
+14.5% train). La versión journal incluye brazos `PG_1`/`PG_2` (probablemente ProcessGAN —
+por verificar).
+
+Definiciones exactas de las condiciones (de `evaluation/recompute_labels_on_generated_data.py`):
+BPIC2012_A = contiene `O_DECLINED-COMPLETE`; BPIC2012_B = `O_CREATED-COMPLETE` ≥ 2 veces;
+Traffic Fines = contiene alguna de 5 actividades de apelación; Sepsis = `Return ER` con
+espera ≤ 28 días desde el evento anterior (temporal → fuera de alcance).
+
+### 28.4 Nuevas plantillas DECLARE implementadas (código)
+
+En `support_modules/traces_evaluation.py`:
+- **Existence(n)**: `rules.ini` con `path = A` + `min_occurrences = n` → `rule = 'atleast_<n>'`.
+- **Choice-of-set**: `any_of = A ; B ; C` → `rule = 'any_of'` (separador `;` porque `|`
+  ya es precedence).
+- `n` viaja dentro del nombre de la regla para **no cambiar la firma** de
+  `evaluate_condition`/`evaluate_condition_list` (el LSTM del submódulo las llama).
+- Nueva función `case_satisfies_rule(df_case, act_paths, rule)`: evalúa por nombre de
+  actividad con la misma semántica que `evaluate_condition`.
+- Nota: no sirve `eventually` con A = A para BPIC2012_B (nuestra semántica exige que cada
+  ocurrencia tenga otra posterior → siempre falso).
+
+**Bug corregido** en `gan_trainer.py` y `gan_trainer_v2.py` (`_split_timeline_70_10_20`):
+la proporción de la regla en train (que se usa como `new_prop_cases`) se calculaba con una
+lógica simplificada que trataba todo lo distinto de `required`/`not_allowed` como
+coexistence (solo presencia de actividades, sin orden). Ahora usa `case_satisfies_rule`.
+Los experimentos previos de RunningExample no se ven afectados (su regla es coexistence /
+required, cuya lógica coincide).
+
+**Validación**:
+- `validation/test_plantillas_declare.py`: 21 pruebas unitarias (parser, ambas plantillas
+  en las dos funciones, regresión de plantillas existentes, arreglo del entrenador) →
+  21/21 pasan (`python -m pytest validation/test_plantillas_declare.py`).
+- `validation/validar_plantillas_vs_cvae.py` + `validation/rules_cvae/*.ini`: aplicado a
+  los TEST de CVAE → **100% de coincidencia** con su columna `label` en BPIC2012_A
+  (937 casos, 19.32%), BPIC2012_B (937, 26.04%) y Traffic Fines (6480, 3.60%).
+
+### 28.5 Advertencias de entorno
+
+- Clones: **Documentos** está al día con `origin/gan-module`; **OneDrive está 18 commits
+  atrasado** (le faltan, entre otros, los arreglos de CONF/RED). Los archivos de reglas eran
+  idénticos en ambos al momento de la verificación.
+- En Documentos el **submódulo `GenerativeLSTM` no está inicializado**, pero
+  `dg_training.py`, `gan_trainer.py` y `gan_trainer_v2.py` lo importan → antes de entrenar
+  desde Documentos: `git submodule update --init GenerativeLSTM`.
+- Ambos clones tienen un `CLAUDE.md` sin versionar que es el de GENESIS (Paper 1).
+- Existe localmente `data/0.logs/bpic2012_a/` (CSV + `rules.ini` con
+  `path = O_DECLINED-COMPLETE`), preparado previamente.
+
+### 28.6 Próximos pasos
+
+1. Inicializar el submódulo en Documentos.
+2. Prueba piloto: BPIC2012_A como réplica directa de CVAE (mismo split, condición y
+   proporción 16.5%), evaluando con sus scripts; adaptar el formato (un solo timestamp por
+   evento → duraciones cero).
+3. Implementar la penalización por regla (opción d) para una plantilla.
+4. Corregir la Tabla 1 y leer PNC-SYN.

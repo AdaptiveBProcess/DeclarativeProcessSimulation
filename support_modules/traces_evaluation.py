@@ -26,13 +26,26 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     config.read(path)
 
     settings = {}
+    options = config.options('RULES')
+    settings['variation'] = config['RULES']['variation'][0] if 'variation' in options else None
+    settings['prop_variation'] = float(config['RULES']['variation'][1:]) if 'variation' in options else None
+
+    # Choice-of-set: "any_of = A ; B ; C" -> at least one of the activities occurs.
+    # ';' is used because '|' already denotes precedence in the 'path' syntax.
+    if 'any_of' in options:
+        settings['path'] = [x.strip() for x in config['RULES']['any_of'].split(';') if x.strip()]
+        if not settings['path']:
+            raise ValueError(f"'any_of' in {path} does not list any activity")
+        settings['rule'] = 'any_of'
+        if verbose:
+            print("\n", "### Rules path: ", settings['path'], "###", "\n")
+        return settings
+
     settings['path'] = [x.strip() for x in config['RULES']['path'].split('>>')]
-    settings['variation'] = config['RULES']['variation'][0] if 'variation' in config.options('RULES') else None
-    settings['prop_variation'] = float(config['RULES']['variation'][1:]) if 'variation' in config.options('RULES') else None
     if verbose:
         print ( "\n", "### Rules path: ", settings['path'] , "###" , "\n")
 
-    
+
     if '*' in settings['path']:
         settings['rule'] = 'eventually'
     elif '^' in config['RULES']['path']:
@@ -57,7 +70,23 @@ def extract_rules(path='GenerativeLSTM/rules.ini',verbose=False):
     settings['path'] = [x.replace('^', '') for x in settings['path'] if x != '*']
     #eliminar elemento "|","#","+","-"
     settings['path'] = [x for x in settings['path'] if x not in ['|', '#','+',"-"]]
+
+    # Existence(n): "path = A" + "min_occurrences = n" -> A occurs at least n times.
+    # n travels inside the rule name so that evaluate_condition(_list) keep their
+    # signature (the LSTM predictor in the GenerativeLSTM submodule calls them).
+    if 'min_occurrences' in options:
+        n = int(config['RULES']['min_occurrences'])
+        if n < 1 or len(settings['path']) != 1:
+            raise ValueError(f"'min_occurrences' in {path} needs n >= 1 and a single activity in 'path'")
+        settings['rule'] = f'atleast_{n}'
     return settings
+
+
+def _min_occurrences(rule):
+    """Returns n for rules of the form 'atleast_<n>', None otherwise."""
+    if isinstance(rule, str) and rule.startswith('atleast_'):
+        return int(rule.split('_', 1)[1])
+    return None
 
 #list_case is the trace genererated by the allucinator
 #ac_index is dictionary with the activity and its index
@@ -152,6 +181,10 @@ def evaluate_condition_list(list_case, ac_index, act_paths, rule):
             # Si A ni siquiera ocurrió, la regla no se activó.
             # Bajo criterio de "no-vacuidad", esto es False.
             conds = False
+    elif _min_occurrences(rule) is not None:
+        conds = list(list_case).count(act_paths_idx[0]) >= _min_occurrences(rule)
+    elif rule == 'any_of':
+        conds = any(act in list_case for act in act_paths_idx)
     return conds
 
 ## receives a dataframe and orders
@@ -254,7 +287,21 @@ def evaluate_condition(df_case, ac_index, act_paths, rule):
             # Si A ni siquiera ocurrió, la regla no se activó.
             # Bajo criterio de "no-vacuidad", esto es False.
             conds = False
+    elif _min_occurrences(rule) is not None:
+        conds = trace_sequence.count(act_paths_idx[0]) >= _min_occurrences(rule)
+    elif rule == 'any_of':
+        conds = any(act in trace_sequence for act in act_paths_idx)
     return conds
+
+
+def case_satisfies_rule(df_case, act_paths, rule):
+    """Evaluates a rule on one case identified by activity names, with the same
+    semantics as evaluate_condition (no activity-to-index mapping needed)."""
+    df_case = df_case.copy()
+    if 'caseid' not in df_case.columns:
+        df_case['caseid'] = 0
+    name_index = {task: task for task in df_case['task'].unique()}
+    return evaluate_condition(df_case, name_index, act_paths, rule)
 
 class GenerateStats:
     def __init__(self, log, ac_index, act_paths, rule) -> None:

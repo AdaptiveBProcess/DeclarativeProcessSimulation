@@ -190,16 +190,8 @@ class GANTrainer:
         act_paths = rules['path']
         rule_type = rules['rule']
 
-        def _satisfies(grp):
-            tasks = set(grp['task'].values)
-            if rule_type == 'not_allowed':
-                return act_paths[0] not in tasks
-            elif rule_type == 'required':
-                return act_paths[0] in tasks
-            else:
-                return all(a in tasks for a in act_paths)
-
-        flags = self.log_train.groupby('caseid').apply(_satisfies)
+        flags = self.log_train.groupby('caseid').apply(
+            lambda grp: te.case_satisfies_rule(grp, act_paths, rule_type))
         self.pos_train_cases = int(flags.sum())
         self.n_train_cases   = int(len(flags))
         self.train_prop      = float(flags.mean())
