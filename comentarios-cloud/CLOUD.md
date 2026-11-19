@@ -2184,3 +2184,94 @@ Diferencias con DECLARE estándar (documentarlas en la subsección *Change speci
    evento → duraciones cero).
 3. Implementar la penalización por regla (opción d) para una plantilla.
 4. Corregir la Tabla 1 y leer PNC-SYN.
+
+---
+
+## 29. Experimentos de comparación: generación con RULE-GAN, Dynamics y CVAE (2026-11-19)
+
+### 29.1 Decisiones del usuario
+
+- Foco del paper: calidad del comportamiento generado. Dimensiones de evaluación:
+  eficiencia, fidelidad, novedad, control condicional, plausibilidad, diversidad.
+- Tres escenarios: restrictivo, *enhancing* con *hold-out* (validación de las métricas
+  indirectas) y *enhancing* real.
+- Logs: BPIC2012 (etiquetas A y B de CVAE), Traffic Fines, PurchasingExample y
+  RunningExample. Se descarta ConsultaDataMining. Sepsis queda fuera (su condición es
+  temporal).
+- Dynamics se usa con su modelo publicado en Zenodo y con la corrección B (29.3).
+- Se empieza por RunningExample, con los tres enfoques.
+
+### 29.2 Estructura `experimentos/`
+
+Scripts por enfoque (`dynamics/`, `rule_gan/`, `cvae/`) y lo compartido en `comun/`
+(log, división train/test y reglas por log). Modelos, ejecuciones y clones externos no se
+versionan. Detalle y comandos en `experimentos/README.md`.
+
+- **Log y división comunes (RunningExample)**: el log de Dynamics es el RE local sin
+  `EVENT 1 START`/`EVENT 7 END` (verificado: 540/540 casos idénticos). Su test publicado
+  son los últimos 107 casos; train = 433. RULE-GAN y CVAE usan esa misma división.
+- **Reglas de RE**: las 6 de Dynamics (`GenerativeLSTM/rules.ini`), con
+  `variation = =1`: r1 B>>C (35,9% del log la cumple), r2 ^C (50,9%), r3 C (49,1%),
+  r4 A>>*>>D (78,7%), e1 C>>*>>A (0%), e2 A>>C (0%).
+- **Reclasificación de PurchasingExample** (verificada con el evaluador del repo): las dos
+  reglas que el paper de Dynamics llama restrictivas no las cumple ninguna traza
+  (Send RfQ >> Analyze RfQ; Create RfQ >>*>> Create Purchase Requisition) y las dos que
+  llama *enhancing* las cumple el 67,9% (Choose best option >> Settle Conditions;
+  Settle Conditions >>*>> Create Purchase Order). En los experimentos se clasifican por el
+  % del log que las cumple.
+- **Submódulo `GenerativeLSTM` inicializado** en Documents (commit fijado 2676747). La
+  carpeta previa (205 archivos idénticos al submódulo + `output_files/training_times.csv`,
+  restaurado) quedó respaldada fuera del repo en
+  `Declarative_final/_respaldo_GenerativeLSTM_20261119`.
+
+### 29.3 Dynamics: error en su generador publicado y corrección B
+
+Con `variation = =1`, `EventLogPredictor.generate_trace` calcula la proporción actual como
+`(cumplen + n)/(total + n)` y acepta una traza que cumple solo si esa proporción es menor
+que la pedida (1,0). Tras guardar la primera traza vale 1,0 y se rechaza el resto. En
+paralelo sale ~1 traza por proceso: 8 trazas en una CPU de 8 núcleos (exactamente el primer
+caso de cada uno de los 8 primeros bloques), en vez de las 107 pedidas. Su paquete de
+Zenodo muestra lo mismo (4, 3 y 3 casos generados en RE, PE y CDM). El paper afirma que
+genera "a comparable number of traces to the original event log".
+
+Corrección B (`experimentos/dynamics/predictor_corregido.py`, sin modificar el submódulo):
+solo cambia la regla de aceptación (aceptar mientras falten trazas de cada clase hasta la
+meta) y el presupuesto de intentos (10x, igual que RULE-GAN). Resultado en RE: 107 trazas,
+107 cumplen, tanto con r1 como con e2 (~50 s por corrida). `--publicado` corre sin corregir.
+
+Otras características de Dynamics que se conservan por ser parte de su método: largo máximo
+del modelo de RE (`max_trace_size = 5`) impide trazas de 5 actividades (A B D C E); tras
+cumplirse la regla elige la siguiente actividad al azar entre todas (trazas como A B C B);
+los tokens `start`/`end` se eliminan después, como en su `hallucinate`.
+
+### 29.4 CVAE: versión del código y entorno
+
+- Los modelos del paper de ICPM 2024 solo cargan con el código anterior a la generación de
+  recursos (4ea4553, 17-09-2024). Se usa una copia de trabajo en `c3be4b0`
+  (`experimentos/cvae/repo_icpm2024`); esa versión no genera recursos.
+- Entorno `cvae` (Python 3.11): `ray` 2.20.0 en vez de 2.24.0 (no existe para Windows con
+  Python 3.11) y dependencias indirectas resueltas por pip; `pyarrow` 12.0.1 fijado.
+  `bpic2012_a.pkl` referencia `ray.air.checkpoint._CheckpointMetadata`; se carga
+  reemplazando solo esa clase de metadatos.
+- Prueba: BPIC2012 A, 937 trazas pedidas con la condición, 37.775 eventos, largo medio 40,
+  ~24 min por corrida en CPU. 864/937 (92,2%) contienen `O_DECLINED-COMPLETE`.
+
+### 29.5 RULE-GAN
+
+Versión V4 (`GANTrainerV2`, `transformer_wgan`, sin pérdidas auxiliares), con los
+hiperparámetros de `dg_training.py`. `experimentos/rule_gan/entrenar.py` reemplaza solo el
+split 70/10/20 por la división común. Cadena verificada con un entrenamiento de 2 épocas
+(borrado). La regla se impone al generar por muestreo con rechazo (presupuesto 10x); la
+penalización por regla (opción d) sigue sin implementarse.
+
+### 29.6 Métricas de calidad bajo cambio
+
+`evaluacion/metricas_cambio.py` (novedad, novedad no pedida y validada, control condicional,
+plausibilidad condicionada a φ por alcance, compatibilidad rol-actividad, fidelidad en lo
+que φ no toca, diversidad Damerau-Levenshtein, novedad válida) con 19 pruebas en
+`validation/test_metricas_cambio.py` (42/42 pasan junto con las 23 previas).
+
+Limitación verificada: el chequeo de restricciones contradichas por φ es por pares. En RE,
+con e1 (C >>*>> A) marca 0 restricciones, pero las 12 trazas candidatas construidas para
+cumplir e1 violan al menos 6 restricciones minadas cada una (sobre todo cadenas
+START→A y A→B). Pendiente reemplazarlo antes de medir.
