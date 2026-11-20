@@ -1,36 +1,44 @@
 """
-Entrena RULE-GAN (GANTrainerV2, Transformer + WGAN-GP) con la division comun.
+Entrena RULE-GAN (GANTrainerV2: Transformer + Time2Vec + WGAN-GP) con la division
+comun y guarda checkpoints para elegir la epoca con la validacion.
 
-Usa los mismos hiperparametros que dg_training.py -m transformer_wgan. La unica
-diferencia es la division: en vez del 70/10/20 propio del entrenador, se usan los
-casos de experimentos/comun/<log>/split/ (los mismos que Dynamics), para que los
-tres enfoques se entrenen y evaluen sobre los mismos casos.
+Diferencias con dg_training.py -m transformer_wgan (el codigo del entrenador no
+se modifica):
+  - Division: se entrena con experimentos/comun/<log>/split/subtrain_caseids.txt
+    (train sin la validacion). El test y la validacion no se usan para entrenar.
+  - Hiperparametros: por defecto los de V4; se pueden cambiar (ver HIPERPARAMETROS)
+    para la busqueda de experimentos/rule_gan/buscar.py.
+  - Checkpoints: se guardan los pesos del generador cada `cada` epocas en
+    <modelo>/checkpoints/epoca_XXXX.h5 (XXXX = epocas completadas), ademas del
+    generador final que guarda el entrenador.
 
-El entrenamiento no depende de la regla: un modelo por log sirve para todas las
-reglas (salvo en el hold-out, donde hay que entrenar sin las trazas ocultas; ver
---excluir-regla).
+Las tasas de aprendizaje (Adam D 1e-4, G 2e-4, beta1=0, beta2=0.9) quedan fijas en
+el entrenador; son las mismas en las versiones V2 a V6.
+
+El entrenamiento no depende de la regla. En el hold-out, --excluir-regla quita del
+entrenamiento los casos que cumplen la regla.
 
 Uso:
-    python experimentos/rule_gan/entrenar.py --log RunningExample [--epocas 1000]
-    python experimentos/rule_gan/entrenar.py --log RunningExample --excluir-regla r1_directly_TaskB_TaskC
+    python experimentos/rule_gan/entrenar.py --log RunningExample
+    python experimentos/rule_gan/entrenar.py --log RunningExample --config '{"d_model": 32}'
 
 Resultado: experimentos/rule_gan/modelos/<log>/<AAAAMMDD_HHMMSS>/
-    gen/                         generador (SavedModel)
-    parameters/model_parameters.json, test_log.csv, <log>_ASIS.csv
-    entrenamiento.json           parametros y casos usados
+    gen/ (generador final), checkpoints/, parameters/, entrenamiento.json
 """
 import argparse
+import builtins
 import json
 import os
 import random
 import sys
+import time
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
 RAIZ = AQUI.parents[1]
 COMUN = RAIZ / "experimentos" / "comun"
 
-# Configuracion de dg_training.py para transformer_wgan (v4 CPU)
+# V4: configuracion "v4 CPU" de dg_training.py (transformer_wgan)
 HIPERPARAMETROS = {
     "rp_sim": 0.85,
     "norm_method": "lognorm",
@@ -44,10 +52,12 @@ HIPERPARAMETROS = {
     "num_blocks": 3,
     "dropout": 0.1,
     "time2vec_dim": 16,
+    "bg_lambda": 0.0,
+    "ct_lambda": 0.0,
 }
 
 
-def _ids(log: str, nombre: str) -> set:
+def ids(log: str, nombre: str) -> set:
     return set((COMUN / log / "split" / f"{nombre}_caseids.txt").read_text().split())
 
 
@@ -65,29 +75,32 @@ def _preparar_entrada(log: str, destino: Path) -> Path:
     return salida
 
 
-def entrenar(log: str, epocas: int, semilla: int, excluir_regla: str = None) -> None:
+def entrenar(log: str, hiper: dict = None, semilla: int = 0, conjunto: str = "subtrain",
+             excluir_regla: str = None, cada: int = 100, salida: Path = None) -> Path:
+    """Entrena y devuelve la carpeta del modelo. `conjunto` = 'subtrain' (seleccion)
+    o 'train' (train completo, sin validacion)."""
     import numpy as np
     import tensorflow as tf
+    import GenerativeGAN.model_training.gan_trainer_v2 as modulo_v2
     from GenerativeGAN.model_training.gan_trainer_v2 import GANTrainerV2
     from support_modules import traces_evaluation as te
 
+    hiper = {**HIPERPARAMETROS, **(hiper or {})}
     random.seed(semilla)
     np.random.seed(semilla)
     tf.random.set_seed(semilla)
 
-    train_ids, test_ids = _ids(log, "train"), _ids(log, "test")
-    regla_ini = None
-    if excluir_regla:
-        regla_ini = COMUN / log / "reglas" / f"{excluir_regla}.ini"
+    train_ids, test_ids = ids(log, conjunto), ids(log, "test")
+    regla_ini = COMUN / log / "reglas" / f"{excluir_regla}.ini" if excluir_regla else None
 
     class GANTrainerComun(GANTrainerV2):
-        """GANTrainerV2 con la division comun en lugar de su 70/10/20."""
+        """GANTrainerV2 con la division comun y checkpoints."""
 
         def _split_timeline_70_10_20(self, rules_path, test_save_path=None):
-            ids = self.log["caseid"].astype(str)
-            self.log_train = self.log[ids.isin(train_ids)].copy()
+            caso = self.log["caseid"].astype(str)
+            self.log_train = self.log[caso.isin(train_ids)].copy()
             self.log_val = self.log.iloc[0:0].copy()
-            self.log_test = self.log[ids.isin(test_ids)].copy()
+            self.log_test = self.log[caso.isin(test_ids)].copy()
             self.ocultos = []
             if regla_ini is not None:
                 regla = te.extract_rules(path=str(regla_ini))
@@ -98,16 +111,44 @@ def entrenar(log: str, epocas: int, semilla: int, excluir_regla: str = None) -> 
                                                 .isin(self.ocultos)].copy()
             self.n_train_cases = int(self.log_train["caseid"].nunique())
             self.n_test_cases = int(self.log_test["caseid"].nunique())
-            # La proporcion de la regla se calcula al generar, para cada regla.
-            self.pos_train_cases = self.train_prop = None
-            print(f"[RULE-GAN] Division comun: {self.n_train_cases} train | "
-                  f"{self.n_test_cases} test | {len(self.ocultos)} ocultos (hold-out)")
+            self.pos_train_cases = self.train_prop = None   # se calcula al generar, por regla
+            print(f"[RULE-GAN] Division comun ({conjunto}): {self.n_train_cases} train | "
+                  f"{self.n_test_cases} test | {len(self.ocultos)} ocultos")
+
+        def _train_wgan_gp(self, X, output_path):
+            # El entrenador imprime su progreso cada 25 epocas desde dentro del bucle;
+            # se intercepta ese print (solo en su modulo) para guardar los pesos del
+            # generador sin copiar ni modificar el bucle de entrenamiento.
+            carpeta_ckpt = Path(output_path) / "checkpoints"
+            carpeta_ckpt.mkdir(parents=True, exist_ok=True)
+            self.checkpoints = []
+            entrenador = self
+
+            def print_con_checkpoint(*args, **kwargs):
+                builtins.print(*args, **kwargs)
+                texto = args[0] if args else ""
+                if isinstance(texto, str) and texto.startswith("[WGAN-GP] epoch "):
+                    epoca = int(texto[len("[WGAN-GP] epoch "):].split("/")[0])
+                    completadas = epoca + 1
+                    if (epoca > 0 and epoca % cada == 0) or completadas == entrenador.epochs:
+                        entrenador.generator.save_weights(
+                            str(carpeta_ckpt / f"epoca_{completadas:04d}.h5"))
+                        entrenador.checkpoints.append(completadas)
+
+            modulo_v2.print = print_con_checkpoint
+            try:
+                super()._train_wgan_gp(X, output_path)
+            finally:
+                del modulo_v2.print
+            if self.epochs not in self.checkpoints:
+                raise RuntimeError("No se guardo el checkpoint final; revisar el formato del "
+                                   "progreso que imprime GANTrainerV2.")
 
     entrada = _preparar_entrada(log, AQUI / "modelos" / log / "_entrada")
-    salida = AQUI / "modelos" / log
+    base = salida or (AQUI / "modelos" / log)
+    base.mkdir(parents=True, exist_ok=True)
     params = {
-        **HIPERPARAMETROS,
-        "epochs": epocas,
+        **hiper,
         "file_name": f"{log}.csv",
         "model_type": ["transformer_wgan"],
         "read_options": {
@@ -118,32 +159,43 @@ def entrenar(log: str, epocas: int, semilla: int, excluir_regla: str = None) -> 
         },
         "split_config": {"rules_path": "", "test_save_path": None},
     }
-    antes = {p.name for p in salida.iterdir() if p.is_dir()}
-    entrenador = GANTrainerComun(params, input_folder=str(entrada.parent), output_folder=str(salida))
-    nuevas = [p for p in salida.iterdir() if p.is_dir() and p.name not in antes and p.name != "_entrada"]
+    antes = {p.name for p in base.iterdir() if p.is_dir()}
+    inicio = time.time()
+    entrenador = GANTrainerComun(params, input_folder=str(entrada.parent), output_folder=str(base))
+    nuevas = [p for p in base.iterdir() if p.is_dir() and p.name not in antes
+              and not p.name.startswith("_")]
     carpeta = max(nuevas, key=lambda p: p.stat().st_mtime)
     meta = {
-        "enfoque": "rule_gan", "log": log, "semilla": semilla, "epocas": epocas,
-        "hiperparametros": {**HIPERPARAMETROS, "epochs": epocas},
+        "enfoque": "rule_gan", "log": log, "semilla": semilla, "conjunto": conjunto,
+        "hiperparametros": hiper, "checkpoints": entrenador.checkpoints,
         "n_train": entrenador.n_train_cases, "n_test": entrenador.n_test_cases,
         "excluir_regla": excluir_regla, "casos_ocultos": entrenador.ocultos,
+        "segundos": round(time.time() - inicio, 1),
     }
     (carpeta / "entrenamiento.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
     print(f"[ok] Modelo RULE-GAN: {carpeta}")
+    return carpeta
+
+
+def preparar_entorno() -> None:
+    sys.stdout.reconfigure(encoding="utf-8")   # el entrenador imprime caracteres no ASCII
+    sys.stderr.reconfigure(encoding="utf-8")
+    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
+    os.chdir(RAIZ)                              # el entrenador usa rutas relativas al repo
+    if str(RAIZ) not in sys.path:
+        sys.path.insert(0, str(RAIZ))
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--log", required=True)
-    ap.add_argument("--epocas", type=int, default=HIPERPARAMETROS["epochs"])
+    ap.add_argument("--config", default="{}", help="JSON con hiperparametros que reemplazan a los de V4")
     ap.add_argument("--semilla", type=int, default=0)
+    ap.add_argument("--conjunto", default="subtrain", choices=["subtrain", "train"])
+    ap.add_argument("--cada", type=int, default=100, help="epocas entre checkpoints")
     ap.add_argument("--excluir-regla", default=None,
-                    help="hold-out: entrenar sin los casos de train que cumplen esta regla")
+                    help="hold-out: entrenar sin los casos que cumplen esta regla")
     args = ap.parse_args()
-
-    sys.stdout.reconfigure(encoding="utf-8")   # el entrenador imprime caracteres no ASCII
-    sys.stderr.reconfigure(encoding="utf-8")
-    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")
-    os.chdir(RAIZ)
-    sys.path.insert(0, str(RAIZ))
-    entrenar(args.log, args.epocas, args.semilla, args.excluir_regla)
+    preparar_entorno()
+    entrenar(args.log, json.loads(args.config), args.semilla, args.conjunto,
+             args.excluir_regla, args.cada)
