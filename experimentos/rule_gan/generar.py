@@ -108,8 +108,13 @@ def generar(log: str, regla_id: str, corridas: int, semilla: int, modelo: str, v
         }
         inicio = datetime.datetime.now()
         log_gen = GANPredictor().predict(parms, str(carpeta / mp["model_file"]), None, None, None)
-        df = pd.DataFrame(log_gen).rename(columns={"role": "user"})
-        df = df[~df["task"].isin(["Start", "End", "start", "end"])]
+        columnas = ["caseid", "task", "user", "start_timestamp", "end_timestamp"]
+        df = pd.DataFrame(log_gen, columns=["caseid", "task", "role", "start_timestamp",
+                                            "end_timestamp"]).rename(columns={"role": "user"})
+        df = df[~df["task"].isin(["Start", "End", "start", "end"])][columnas]
+        if df.empty:
+            print(f"[aviso] {regla_id}: ninguna traza generada cumple la regla dentro del "
+                  f"presupuesto de intentos (corrida {i}).")
         df.to_csv(destino / f"{log}.csv", index=False)
         shutil.copy(ini, destino / "regla.ini")
         meta = {

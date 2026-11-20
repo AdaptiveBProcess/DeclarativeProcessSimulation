@@ -2264,6 +2264,12 @@ split 70/10/20 por la división común. Cadena verificada con un entrenamiento d
 (borrado). La regla se impone al generar por muestreo con rechazo (presupuesto 10x); la
 penalización por regla (opción d) sigue sin implementarse.
 
+Entrenamiento real en RE (semilla 0, 1.000 épocas, ~0,1 s/época;
+`modelos/RunningExample/20261119_185834`). Diferencias con las corridas V4 previas sobre
+RE: división común (433/107, sin validación) y log sin `EVENT 1 START`/`EVENT 7 END`.
+Generación: r1 → 107 trazas, 107 cumplen; e2 (*enhancing*) → 0 trazas aceptadas de 1.070
+intentos.
+
 ### 29.6 Métricas de calidad bajo cambio
 
 `evaluacion/metricas_cambio.py` (novedad, novedad no pedida y validada, control condicional,
