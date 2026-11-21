@@ -144,6 +144,20 @@ def entrenar(log: str, hiper: dict = None, semilla: int = 0, conjunto: str = "su
                 raise RuntimeError("No se guardo el checkpoint final; revisar el formato del "
                                    "progreso que imprime GANTrainerV2.")
 
+    class FeaturesSinConstantes(modulo_v2.FeaturesMannager):
+        """scale_feature del entrenador, pero una variable constante queda en 0 en
+        lugar de NaN (0/0 al normalizar). Pasa con la duracion en los logs de un solo
+        timestamp (BPIC2012, Traffic Fines), que es siempre 0. El predictor ya trata
+        ese caso (max == min). En RE y PE no cambia nada."""
+
+        @staticmethod
+        def scale_feature(log, feature, method, replace=False):
+            log, args = original.scale_feature(log, feature, method, replace)
+            if method in ("lognorm", "normal") and args["max_value"] == args["min_value"]:
+                log[feature + "_norm"] = 0.0
+            return log, args
+
+    original = modulo_v2.FeaturesMannager
     entrada = _preparar_entrada(log, AQUI / "modelos" / log / "_entrada")
     base = salida or (AQUI / "modelos" / log)
     base.mkdir(parents=True, exist_ok=True)
@@ -161,7 +175,11 @@ def entrenar(log: str, hiper: dict = None, semilla: int = 0, conjunto: str = "su
     }
     antes = {p.name for p in base.iterdir() if p.is_dir()}
     inicio = time.time()
-    entrenador = GANTrainerComun(params, input_folder=str(entrada.parent), output_folder=str(base))
+    modulo_v2.FeaturesMannager = FeaturesSinConstantes
+    try:
+        entrenador = GANTrainerComun(params, input_folder=str(entrada.parent), output_folder=str(base))
+    finally:
+        modulo_v2.FeaturesMannager = original
     nuevas = [p for p in base.iterdir() if p.is_dir() and p.name not in antes
               and not p.name.startswith("_")]
     carpeta = max(nuevas, key=lambda p: p.stat().st_mtime)

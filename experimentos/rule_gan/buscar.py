@@ -10,6 +10,8 @@ Procedimiento:
   3. Cada ensayo: entrenar 1000 epocas con checkpoints cada 100, elegir la epoca con
      temperatura 1 y luego la temperatura, promediando 5 logs generados del tamano de
      la validacion (ver seleccion.py).
+  4. El presupuesto cuenta configuraciones distintas. Si TPE propone una ya
+     entrenada, se reutiliza su objetivo sin volver a entrenar.
 
 Espacio (las tasas de aprendizaje, latent_dim=64, batch=32, n_critic=5 y
 dropout=0.1 quedan fijos, como en V2-V6):
@@ -77,10 +79,27 @@ def buscar(log: str, presupuesto: int, etiqueta: str, semilla: int, n_gen: int,
 
     nombre_de = {json.dumps(c, sort_keys=True): n for n, c in HISTORICAS.items()}
 
+    def _clave(config):
+        config = {k: (float(config[k]) if k.endswith("lambda") else int(config[k])) for k in ESPACIO}
+        return json.dumps(config, sort_keys=True)
+
+    def evaluadas():
+        """Objetivo de cada configuracion ya entrenada (clave -> objetivo)."""
+        if not (salida / "ensayos.csv").exists():
+            return {}
+        previos = pd.read_csv(salida / "ensayos.csv")
+        return {_clave(f): float(f["objetivo"]) for _, f in previos.iterrows()}
+
     def objetivo(config):
         config = {k: (float(v) if k.endswith("lambda") else int(v)) for k, v in config.items()}
         clave = json.dumps(config, sort_keys=True)
         nombre = nombre_de.get(clave, "TPE")
+        previas = evaluadas()
+        if clave in previas:
+            # Misma configuracion y misma semilla dan el mismo resultado: no se
+            # vuelve a entrenar ni cuenta para el presupuesto.
+            print(f"[busqueda] {log} | repetida ({nombre}), se reutiliza: {config}", flush=True)
+            return {"loss": previas[clave], "status": STATUS_OK, "repetida": True}
         n_ensayo = len(pd.read_csv(salida / "ensayos.csv")) + 1 if (salida / "ensayos.csv").exists() else 1
         print(f"\n[busqueda] {log} | ensayo {n_ensayo}/{presupuesto} ({nombre}) | {config}", flush=True)
         t0 = time.time()
@@ -120,12 +139,15 @@ def buscar(log: str, presupuesto: int, etiqueta: str, semilla: int, n_gen: int,
         return sum(t["result"].get("status") == STATUS_OK for t in trials.trials)
 
     # Un ensayo por llamada, guardando el estado despues de cada una. La primera
-    # llamada evalua las versiones historicas pendientes.
-    while completados() < presupuesto:
+    # llamada evalua las versiones historicas pendientes. El presupuesto cuenta
+    # configuraciones distintas; las propuestas de TPE se limitan a 4x el
+    # presupuesto por si TPE solo propone configuraciones ya evaluadas.
+    while len(evaluadas()) < presupuesto and len(trials.trials) < 4 * presupuesto:
         fmin(objetivo, espacio, algo=tpe.suggest, max_evals=completados() + 1, trials=trials,
              rstate=rng, show_progressbar=False)
         archivo_trials.write_bytes(pickle.dumps(trials))
-    print(f"\n[ok] Busqueda {log} terminada: {salida / 'ensayos.csv'}")
+    print(f"\n[ok] Busqueda {log} terminada: {len(evaluadas())} configuraciones distintas en "
+          f"{len(trials.trials)} propuestas: {salida / 'ensayos.csv'}")
 
 
 if __name__ == "__main__":

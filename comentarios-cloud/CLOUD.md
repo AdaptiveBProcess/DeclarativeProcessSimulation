@@ -2281,3 +2281,55 @@ Limitación verificada: el chequeo de restricciones contradichas por φ es por p
 con e1 (C >>*>> A) marca 0 restricciones, pero las 12 trazas candidatas construidas para
 cumplir e1 violan al menos 6 restricciones minadas cada una (sobre todo cadenas
 START→A y A→B). Pendiente reemplazarlo antes de medir.
+
+### 29.7 Selección del modelo RULE-GAN (2026-11-20)
+
+**Metodología acordada con el usuario.** Se selecciona por log, con la validación (el último
+20% cronológico del train) y sin usar el test.
+- Búsqueda con hyperopt (TPE), con un presupuesto de 30 configuraciones. Empieza por V4,
+  V2, V3, V5 y V6.
+- Checkpoints cada 100 épocas. Grilla de temperatura {0,7; 0,85; 1; 1,15; 1,3}. 5 logs
+  generados por evaluación.
+- Objetivo: el promedio de RED, CTD, 2GD, frecuencias, 1-CONF y la diferencia de
+  diversidad, cada una dividida por la de V4.
+- Las 3 mejores configuraciones se confirman con 3–5 semillas (Friedman + Holm).
+- El λ de la opción (d) se ajusta en la validación. El test se usa una sola vez.
+- En los logs grandes se entrena más: hasta 5.000 épocas, con checkpoints cada 500.
+
+Código en `experimentos/rule_gan/{seleccion,buscar}.py`.
+
+**Qué es una "época" en `GANTrainerV2`.** Es una iteración: 5 pasos del crítico, cada uno
+con medio lote (16 trazas), y 1 paso del generador con 32 trazas. No es una pasada por los
+datos.
+
+**Correcciones (2026-11-20).**
+- **TPE repetía configuraciones.** En RE, 9 de los 30 ensayos fueron configuraciones ya
+  entrenadas, con resultado idéntico (misma semilla); quedaron 21 distintas. En PE, 1 de
+  los primeros 19. Ahora `buscar.py` reutiliza el resultado sin volver a entrenar, y el
+  presupuesto cuenta configuraciones distintas.
+- **NaN con duraciones constantes.** En BPIC2012 y Traffic Fines la duración es siempre 0
+  (un solo timestamp por evento). La normalización lognorm de `FeaturesMannager` queda en
+  0/0 = NaN, y el entrenamiento se rompía. `entrenar.py` deja esa variable en 0 sin
+  modificar el entrenador; el predictor ya trataba el caso max = min. En RE y PE no cambia
+  nada.
+
+**Costo medido en BPIC2012.** Medido en CPU (i5-10300H), sin otros procesos, con 101
+iteraciones y la división común.
+
+| Versión | Largo máximo 175 | Largo máximo 100 |
+|---|---|---|
+| V2 | 1,76 s/iteración | 0,65 s/iteración |
+| V4 | 6,56 s/iteración | 2,27 s/iteración |
+
+- **Costos fijos.** La preparación tarda 33–41 s y la compilación 11–24 s. En RE, V4
+  tarda ~0,1 s/iteración.
+- **Largo de las trazas.** BPIC2012 tiene 4.684 casos. El largo medio es 39,9, el
+  percentil 99 es 106 y el máximo 175 (en la validación, 133). 57 casos (1,2%) superan
+  los 100 eventos; truncar a 100 quita 1.262 eventos (0,7%).
+- **Costo de evaluar un log generado de 468 trazas.**
+  - Generación: 6,4 s.
+  - RED 0,9 s, 2GD 0,4 s, CONF 0,25 s; CTD y frecuencias son despreciables.
+  - Diversidad: 33,7 s con 20.000 pares y 3,4 s con 2.000.
+  - En la validación, la diversidad con 2.000 pares (5 semillas) da 0,553–0,561, contra
+    0,554 con 20.000.
+- **MINERful sobre el subtrain** (para CONF): 15 s, 199 restricciones.
