@@ -2333,3 +2333,22 @@ iteraciones y la división común.
   - En la validación, la diversidad con 2.000 pares (5 semillas) da 0,553–0,561, contra
     0,554 con 20.000.
 - **MINERful sobre el subtrain** (para CONF): 15 s, 199 restricciones.
+
+**Resultado de la búsqueda en RE y PE (Fase 1, semilla 0, 30 configuraciones distintas
+por log).** Objetivo: menor es mejor; V4 vale 1 en su última época con T = 1. Archivos:
+`experimentos/rule_gan/busqueda/<log>/seleccion/ensayos.csv`.
+
+| Log | Propuestas de TPE | 1.ª | 2.ª | 3.ª | V4 |
+|---|---|---|---|---|---|
+| RE | 48 | **V4** (64/4/3/256/16): 0,846, época 801, T 0,7 | 64/4/2/64/16, bg 5: 0,905 | 64/4/2/256/8, bg 5: 0,943 | 0,846 (1.º) |
+| PE | 51 | **64/2/3/128/16**, sin pérdidas auxiliares: 0,875, época 601, T 0,7 | 64/2/3/256/16: 0,902, T 1,0 | 32/2/2/128/8, bg 5: 0,911 | 0,984 |
+
+Notación de las configuraciones: d_model/heads/blocks/ff/time2vec.
+
+- **Temperatura elegida:** en RE fue 0,7 (el mínimo de la grilla) en 28 de 30
+  configuraciones. En PE: 0,7 en 18, 0,85 en 6, 1,0 en 3, 1,3 en 2 y 1,15 en 1.
+- **Los tiempos de PE no sirven como medida de costo** (`seg_total` en `ensayos.csv`).
+  Según el registro de eventos de Windows, el equipo se suspendió unos 30 min de cada
+  hora, también enchufado, y de corrido entre las 02:10 y las 05:12. El tiempo medido
+  incluye esas suspensiones.
+- La medición de BPIC2012 (19:53–20:18) corrió enchufada y sin suspensiones.
