@@ -2352,3 +2352,34 @@ Notación de las configuraciones: d_model/heads/blocks/ff/time2vec.
   hora, también enchufado, y de corrido entre las 02:10 y las 05:12. El tiempo medido
   incluye esas suspensiones.
 - La medición de BPIC2012 (19:53–20:18) corrió enchufada y sin suspensiones.
+
+**Piloto en BPIC2012 (2026-11-21).** V4, log truncado a 100 eventos por caso,
+5.000 iteraciones con semilla 0. Cada checkpoint (cada 500) se evaluó contra la validación
+completa con T = 1 y 5 logs generados, y la diversidad con 2.000 pares.
+
+- **Entrenar más no mejora.** Normalizado por la iteración 5.000, el objetivo vale 0,83
+  (501), 2,31 (1001), 1,00 (1501), 0,87 (2001), 0,82 (2501), 0,84 (3001), 1,28 (3501),
+  0,92 (4001), 1,00 (4501) y 1,00 (5000). Las diferencias entre checkpoints superan las
+  diferencias entre los 5 logs de un mismo checkpoint (CV mediano: 2GD 0,2%, CTD 10%).
+- **Bajar la temperatura no mejora.** En la iteración 501, el 2GD vale 0,837 con T = 0,1
+  y 0,828 con T = 1. En la 2501, vale 0,883 con T = 0,1 y 0,848 con T = 1.
+- **Distancia al log real.**
+
+  | Comparación | 2GD | CTD | 1-CONF |
+  |---|---|---|---|
+  | Real contra real (3 muestras de 468 trazas del subtrain contra la validación) | 0,045 | 1,1·10⁵ s, 1,3 días | 0,037 |
+  | RULE-GAN, mejores checkpoints | 0,82–0,85 | 1,6–2,5·10⁶ s, 18–29 días | 0,38–0,48 |
+
+  El ciclo medio de la validación es 19,2 días.
+- **Trazas generadas (iteración 2501, T = 1).** Largo medio 68,6, contra 40,1 en la
+  validación. Pares consecutivos de la misma actividad: 20,8%, contra 0,3%. El 77%
+  empieza con `A_SUBMITTED-COMPLETE`; en la validación, el 100%. Los primeros eventos
+  siguen el patrón real y después se degradan.
+- **Los empates de timestamp no lo explican.** El 7,4% de los pares de eventos
+  consecutivos comparte timestamp, pero reordenarlos como lo hace 2GD cambia el 2GD de la
+  validación en 0,003.
+- **Referencia CVAE** (modelo publicado, 937 trazas *deviant*, comparadas contra las 81
+  *deviant* de la validación): 2GD 0,12, CTD 2,6 días, 0,7% de pares repetidos, largo
+  41,6. Real contra real con el mismo subconjunto: 2GD 0,088.
+- **Costo.** Duración de reloj: 15,8 h, por suspensiones y tiempo en batería. Según
+  Windows, el equipo pasó a batería a la 01:48 y se suspendió repetidamente.
