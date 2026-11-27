@@ -2589,3 +2589,103 @@ ICPM 2025, 10.1109/ICPM66919.2025.11220730).
 - No se ha verificado cómo se especifican los escenarios: si con etiquetas del log, como
   CVAE, o con comportamiento ausente del log. El texto completo está en IEEE Xplore, que
   requiere acceso.
+
+**Citas utilizables de Kuhn et al. 2026 para el paper** (lista acordada con el usuario,
+2026-11-27; páginas del PDF de Process Science 3:26).
+
+- **Introducción y motivación:**
+  - p. 4: *"synthetic data aims to enable what-if analyses via causal modeling, allowing
+    exploration of alternative distributions or interventions without being locked into
+    historical data assumptions"*.
+  - p. 2: *"conducting what-if analyses under controlled conditions"*.
+  - p. 30: *"increasingly also for what-if analysis"*.
+  - p. 36: *"evaluation practices have not kept pace"*.
+  - p. 36: *"stronger, purpose-driven validation"*.
+- **Problemática y gap:**
+  - p. 32: *"the field largely assesses synthetic logs through statistical similarity to
+    the real log and through their use in downstream tasks"*.
+  - p. 35, C4: *"what-if analysis are validated with purpose-specific quality notions
+    rather than generic similarity measures"*.
+  - p. 32: *"evaluation is frequently treated as a generic checklist [...] it remains
+    unclear under which conditions a generator is trustworthy for its stated purpose"*.
+  - p. 5: *"limitations may propagate into the generated data"*.
+  - C14 (marcos estándar de evaluación) y C15 (corrección y cobertura).
+- **Related Work y posicionamiento:**
+  - Taxonomía conocimiento / datos / híbrido. Un híbrido es *"injecting domain constraints
+    into learning-based generators"* (p. 5): RULE-GAN se clasifica como híbrido, deep
+    learning, GAN.
+  - What-if *"primarily based on KD and hybrid approaches"* (p. 16); 8 de 52 estudios.
+  - p. 5 (citando a Camargo 2023): la baja interpretabilidad de los generadores basados en
+    datos limita su uso en what-if.
+  - C2 (p. 33): integrar restricciones en la síntesis aprendida.
+- **Metodología de evaluación:**
+  - Semejanza = fidelidad; utilidad = adecuación al propósito; privacidad = fuera de
+    alcance.
+  - La eficiencia computacional se clasifica como utilidad (p. 25).
+  - *"structured scenario-based evaluation to test specific constraints and use cases"*
+    (p. 29): respalda los 3 escenarios.
+  - C8: control condicional.
+  - p. 27: validez y satisfacción de restricciones.
+  - C10: compatibilidad rol-actividad.
+- **Discusión y limitaciones:**
+  - p. 27 y C7: trazas largas (hallazgo de BPIC2012).
+  - C18 y p. 30: sensibilidad a hiperparámetros e *"unstable training behavior"*.
+  - C1 y C6: validación con expertos (limitación declarada).
+- **Cuidados:**
+  - La revisión no distingue restrictive de enhancing.
+  - No incluye a Dynamics.
+  - En C8, *"Enhancing"* significa "mejorar".
+
+**Extensión de CVAE leída (2026-11-27)**: Graziosi, Ronzani, Buliga, Di Francescomarino,
+Folino, Ghidini, Meneghello, Pontieri, *"Generating multiperspective process traces using
+conditional variational autoencoders"*, Process Science 2:8 (2025),
+10.1007/s44311-025-00017-5. PDF compartido por el usuario.
+
+- **La condición debe existir en el log** (p. 12): *"it must be present in the log (or
+  must be deterministically obtained from it) in order to be used by the model during
+  training"*. Por construcción, CVAE solo puede condicionar sobre comportamiento observado.
+- **Su ejemplo motivador** (p. 6) es un *concept drift* con un tratamiento nuevo. Se
+  entrena con todo el log, incluidas trazas posteriores al drift (`c = True`), así que el
+  comportamiento "nuevo" está en los datos.
+- **Qué evalúan** (p. 19–20): un subconjunto del marco de Chapela-Campa et al. 2025.
+  - Métricas: CFLD, 2GD, RED, CTD y CWD.
+  - *"All metrics are computed by comparing the generated log with the test log"*.
+  - CONF: restricciones Declare minadas del log completo con soporte 90%, solo sobre
+    variantes generadas que no están en train.
+  - Análisis de variantes en train y test.
+  - Tasa condicional real (el objetivo es reproducir la tasa de train; desviación de hasta
+    7%).
+  - Línea base real contra real (`train_log`).
+- **Citas útiles para nuestra problemática:**
+  - p. 2: *"existing DL-based generative models are rigid, limiting the generation of
+    distributions different from the training data"*.
+  - p. 2, sobre los modelos híbridos: *"While they may have potential to generate specific
+    data for dimensions of interest, an assessment of this capability is still missing"*.
+  - p. 3: *"unlike many simulation scenarios that aim to closely replicate historical
+    data, generative models in a conditional context should introduce variability in the
+    generated output while remaining within process constraints"*.
+  - p. 9: *"no single architecture consistently outperforms others across different
+    datasets"* (citando a Ketykó 2022). Respalda la selección por log.
+  - p. 9: las GANs son *"prone to challenges such as mode collapse"*.
+- **Configuración:**
+  - Decodificación argmax (p. 16).
+  - Hiperparámetros fijos para todos los datasets (Tabla 3; LSTM de 200, latente 10).
+  - División 60/20/20 con early stopping de paciencia 500.
+  - 10 logs generados por evaluación.
+  - En BPIC2012 se concatena el lifecycle a la actividad.
+- **ProcessGAN en BPIC2012** (Tabla 6): CONF de 48,8–68,3% (CVAE 97,3%, LSTM 98,4–98,7%)
+  y cobertura de variantes 0 (Tabla 5). Es comparable a nuestro piloto V4 (1-CONF
+  0,38–0,48), aunque la definición de CONF difiere.
+- **Limitación declarada:** solo variables condicionales binarias.
+
+**Resumen de WISDOM** (compartido por el usuario; el texto completo sigue pendiente):
+- Problema que aborda: los generadores producen trazas de forma independiente y no
+  capturan *"concurrency, resource contention, and workload distribution"*.
+- Propuesta: generadores basados en datos proponen escenarios what-if; la simulación (BPS)
+  los *"validated and refined [...] to ensure consistency and feasibility at the log
+  level"*.
+- Evaluación: *"an established evaluation framework"* (no nombrado en el resumen).
+- Resultado: *"generative methods fail to capture the full intricacies of process
+  behaviour"*.
+- El resumen no indica cómo se especifican los escenarios ni si admiten comportamiento
+  ausente del log.
