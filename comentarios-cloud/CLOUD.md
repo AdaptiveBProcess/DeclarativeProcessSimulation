@@ -2541,3 +2541,51 @@ comportamiento nuevo que existen están en áreas vecinas:
 - Extensión de CVAE en Process Science (10.1007/s44311-025-00017-5).
 - Casciani et al. 2026.
 - Texto completo de Käppel et al. 2026.
+
+**Revisión sistemática leída (2026-11-27)**: Kuhn, Zisgen, Grüger, Maldonado, Koschmider,
+Bergmann, *"A systematic review of synthetic event data generation: overview, challenges,
+and research directions"*, Process Science 3:26 (2026), 10.1007/s44311-026-00060-w. PDF
+compartido por el usuario.
+
+**Alcance de la revisión.**
+- 52 estudios revisados por pares, hasta el 30-01-2026.
+- La consulta exige la palabra "synthetic", y excluye preprints, tesis y literatura gris.
+- **Dynamics no está incluido** (no aparece en las referencias).
+
+**Objetivo what-if: 8 estudios** (Tabla 4).
+- Los estudios: Camargo 2023 (DeepSimulator); Burattin 2026 (PURPLE); Buliga 2025
+  (WISDOM); Friederich 2026 (PySPN); Graziosi 2024 (CVAE); Kuhn 2024 (Data Petri nets con
+  programación probabilística); Lay 2022; Oyamada 2024 (CoSMo).
+- Por enfoque (Fig. 6): 2 basados en datos, 3 basados en conocimiento y 3 híbridos.
+- p. 16: *"These generators are primarily based on KD and hybrid approaches"*.
+- p. 5, citando a Camargo 2023: la baja interpretabilidad de los modelos basados en
+  datos *"can restrict their suitability for applications such as what-if analysis"*.
+
+**Evaluación.**
+- La revisión la clasifica en semejanza, utilidad y privacidad.
+- p. 32: *"the field largely assesses synthetic logs through statistical similarity to the
+  real log and through their use in downstream tasks"*.
+- p. 32: la evaluación *"is frequently treated as a generic checklist to be executed
+  rather than being derived from the intended use case"*.
+
+**Desafíos que plantea.**
+- **C4** (p. 35): *"A key challenge is to align evaluation criteria and metrics with the
+  stated purpose of generation, ensuring that benchmarking, sharing, augmentation, and
+  what-if analysis are validated with purpose-specific quality notions rather than
+  generic similarity measures."*
+- **C14:** faltan marcos estándar de evaluación.
+- **C15:** corrección y cobertura del comportamiento generado.
+- **C8:** técnicas de síntesis condicional. Ojo: ahí *"Enhancing"* significa "mejorar";
+  no es el *enhancing change* de Dynamics.
+- **Control-flow** (p. 27): *"handling long and highly variable traces without degrading
+  realism or utility"*, y *"validity and constraint satisfaction"*.
+
+**Trabajo nuevo, pendiente de leer: WISDOM** (Buliga, Meneghello, Graziosi, Ronzani,
+ICPM 2025, 10.1109/ICPM66919.2025.11220730).
+- Según su resumen (nota de FBK): generadores basados en datos proponen escenarios
+  what-if y una simulación los valida y refina.
+- Según la revisión: usa VAEs, y *"DECLARE constraint conformance to ensure that
+  'what-if' scenarios remain logically feasible"* (p. 26).
+- No se ha verificado cómo se especifican los escenarios: si con etiquetas del log, como
+  CVAE, o con comportamiento ausente del log. El texto completo está en IEEE Xplore, que
+  requiere acceso.
