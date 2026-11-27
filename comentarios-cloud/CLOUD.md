@@ -2689,3 +2689,46 @@ conditional variational autoencoders"*, Process Science 2:8 (2025),
   behaviour"*.
 - El resumen no indica cómo se especifican los escenarios ni si admiten comportamiento
   ausente del log.
+
+### 29.10 Resultados de la grilla reducida en RE y PE (2026-11-27)
+
+Una semilla (0), 12 configuraciones por log, 9 entrenadas y 3 reutilizadas de la fase 1a.
+Duración: RE unos 25 min y PE unas 2,5 h, seguidas, con el equipo enchufado. Resultados
+en `experimentos/rule_gan/busqueda/<log>/grilla/`.
+
+**Ganadora por log** (objetivo: menor es mejor, 1 = V4 de la fase 1a):
+
+| Log | Ganadora | Cabezas | ff_dim | Tasas (crítico, generador) | Época | T | Objetivo | 2.ª |
+|---|---|---|---|---|---|---|---|---|
+| RE | V4 | 4 | 256 | (1e-4, 2e-4) | 801 | 0,5 | 0,825 | G12 (4, 256, 4e-4/1e-4): 0,884 |
+| PE | G09 | 4 | 128 | (1e-4, 1e-4) | 801 | 0,5 | 0,858 | G02 (2, 128, 1e-4/2e-4): 0,869 |
+
+En PE, V4 quedó última (0,981). En la fase 1a las ganadoras eran V4 en RE (0,846) y
+G02 en PE (0,875); con las temperaturas 0,5 y 0,6 bajan a 0,825 y 0,869.
+
+**Métricas de las ganadoras, divididas por las de V4 de referencia:**
+
+| Log | Config. | RED | CTD | 2GD | freq_act | 1-CONF | div_gap |
+|---|---|---|---|---|---|---|---|
+| RE | V4 | 0,35 | 0,98 | 0,91 | 0,71 | 1,03 | 0,97 |
+| PE | G09 | 0,57 | 0,69 | 1,05 | 1,04 | 1,02 | 0,78 |
+| PE | G02 | 0,69 | 0,62 | 1,06 | 0,96 | 0,99 | 0,88 |
+
+Ninguna configuración generó trazas vacías.
+
+**Mejor tasa para cada par (cabezas, ff_dim):**
+
+| Cabezas, ff_dim | RE | PE |
+|---|---|---|
+| 2, 128 | actual (1e-4, 2e-4) | actual |
+| 2, 256 | crítico más rápido (4e-4, 1e-4) | actual |
+| 4, 128 | actual | iguales (1e-4, 1e-4) |
+| 4, 256 | actual | crítico más rápido |
+
+La tasa actual gana en 5 de 8 pares, el crítico más rápido en 2 y las iguales en 1, que
+es la ganadora de PE.
+
+**Temperatura elegida:**
+- RE: 0,5 en 10 de 12 configuraciones (0,6 y 0,7 en una cada una).
+- PE: 0,5 y 0,6 en 4 cada una; 0,7 en 2; 0,85 y 1,0 en una.
+- Las dos ganadoras quedaron en 0,5, el mínimo de la grilla.
