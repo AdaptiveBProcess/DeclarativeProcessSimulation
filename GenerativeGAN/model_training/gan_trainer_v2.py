@@ -110,11 +110,16 @@ class GANTrainerV2:
         self.scale_args = {'dur': dur_scale, 'wait': wait_scale}
 
         # ── 6. Build training matrix ──────────────────────────────────────────
+        # Longest trace + 1: every trace ends with the 'end' token, and the
+        # positions after it are 'end' as well (see GANSamplesCreator). Before
+        # this change the padding was all zeros and 'end' never appeared in the
+        # training data, so the generator could not learn where traces end.
         self.max_trace_size = int(
-            self.log.groupby('caseid')['task'].count().max())
+            self.log.groupby('caseid')['task'].count().max()) + 1
         creator = GANSamplesCreator()
         X = creator.create_samples(
-            self.log_train, self.ac_index, self.rl_index, self.max_trace_size)
+            self.log_train, self.ac_index, self.rl_index, self.max_trace_size,
+            relleno_end=True)
 
         # ── 7. Build Transformer GAN architecture ─────────────────────────────
         n_ac = len(self.ac_index)
@@ -373,6 +378,7 @@ class GANTrainerV2:
             'scale_args':      scale_args_clean,
             'norm_method':     self.norm_method,
             'max_trace_size':  self.max_trace_size,
+            'relleno_end':     True,   # positions after the trace = 'end' (2026-11-27)
             'one_timestamp':   False,
             'latent_dim':      self.latent_dim,
             'n_size':          5,
