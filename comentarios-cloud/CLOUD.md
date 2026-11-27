@@ -2457,3 +2457,87 @@ Las ganadoras de la fase 1a (V4 en RE y 64/2/3/128/16 en PE) están en la grilla
 - **Implementación:** `GANTrainerV2` acepta `lr_d`, `lr_g`, `beta_1` y `beta_2`, con los
   valores de V2–V6 por defecto, y los guarda en `model_parameters.json`. Verificado con
   un entrenamiento de 2 iteraciones.
+
+### 29.9 Estado del arte: generadores con cambios *enhancing* y cómo miden la calidad (2026-11-27)
+
+Pedido del usuario: confirmar la problemática con una búsqueda amplia.
+- **Cómo se buscó:** búsquedas web por familias de palabras clave (what-if con deep
+  learning, generación condicionada/controlable, conocimiento a priori en PPM,
+  counterfactuals, LLMs, difusión, data augmentation, simulación con agentes, revisiones
+  sistemáticas), y lectura de las secciones experimentales.
+- **Complementa** lo ya revisado en §26–27 (Fast Synthetic, ProcessGAN, PURPLE, CVAE,
+  PosLan, DeepSimulator, CoSMo, Dynamics, Singh et al.).
+
+**Generadores aprendidos y condicionados por el usuario**
+
+| Trabajo | Condición | ¿Comportamiento ausente del log? | Calidad medida |
+|---|---|---|---|
+| Dynamics (Barón-Espitia et al. 2024) | Reglas Declare del usuario | **Sí** (restrictive y enhancing) | Contra un modelo what-if editado a mano, no contra el log base; enhancing no validado en un log real (§27.2) |
+| CoSMo (Oyamada et al. 2024) | Vector de reglas descubiertas, invertidas | No: solo reglas ya descubiertas (§27.4.7) | Cumplimiento de reglas, MAE del tiempo restante |
+| CVAE (Graziosi et al. 2024; extensión en Process Science 2025) | Etiqueta calculada del log | No | RED, CTD, 2GD, CONF (sobre variantes nuevas), tasa condicional |
+| Neuro-Symbolic PPM (Mezini, Umili, Donadello, Maggi, Mancanelli, Patrizi; arXiv 2509.00834, Information Systems 2026) | LTLf integrada en el entrenamiento de un predictor de sufijos | No: restricciones minadas del test con Declare Miner | % de satisfacción de LTLf y similitud DL contra el sufijo real |
+| Di Francescomarino et al. (BPM 2017) | LTL a priori en el beam search de un LSTM | No: conocimiento que se cumple en el futuro real | Exactitud contra el sufijo real |
+
+**Generadores aprendidos sin condición del usuario.**
+- **ProcessGAN.**
+- **AVATAR** (Theis y Darabi, IEEE Access 2020). Usa una SGAN para aproximar las
+  variantes no observadas de un sistema. Evalúa con 15 sistemas *ground truth*
+  sintéticos: divide las variantes en 70% observadas y 30% no observadas y mide cuántas
+  no observadas recupera.
+- **PALSYN** (Process Science 2025, privacidad diferencial).
+- **Generadores con privacidad diferencial basados en difusión** (arXiv 2504.06418).
+- **Comparación de técnicas de augmentation** (Padella, Vinci, de Leoni, arXiv
+  2511.01896). Siete técnicas: DSIM, LSTM, LSTM-GAN, RIMS, SIMOD, AgentSimulator y CVAE;
+  en CVAE excluyen el condicionamiento. Miden:
+  - similitud con el log real: CFLD, n-gramas, AED, RED, CED, CTD, CAR, CWD, RBCED, HWD y
+    DAD;
+  - utilidad (entrenar con el sintético y probar con el real);
+  - entropía y tiempo.
+
+  No evalúan aparte las trazas nuevas.
+- **SiamSA-PPM** (van Straten, Padella, Hassani; arXiv 2610.24777). Augmentation
+  estadística que inyecta variantes no observadas. Se evalúa con entropía, exactitud y
+  distribuciones en las bifurcaciones XOR. Reconoce que *"A potential concern with event
+  log augmentation is the validity of the generated traces"* (cita tomada de un resumen,
+  no verificada textualmente).
+- **Augmentation con LLMs** (Käppel et al., Information Systems 2026). Agrega
+  comportamiento plausible que falta en el log, no especificado por el usuario; según la
+  nota de FAU se evalúa por exactitud de predicción. Texto completo no leído.
+
+**Counterfactuals para explicar predictores.** Son búsquedas (algoritmos genéticos o
+evolutivos), no generadores aprendidos de logs, y producen trazas individuales, no logs.
+- **CREATED** (Hundogan et al., CAiSE 2023).
+  - Puede generar secuencias ausentes del log, pero no acepta restricciones del usuario.
+  - La viabilidad suma cuatro términos: factibilidad (verosimilitud de un modelo de Markov
+    entrenado con el log), cambio en el resultado, esparsidad y similitud DL.
+- **Buliga, Di Francescomarino, Ghidini, Montali, Ronzani** (arXiv 2503.01792, 2025).
+  - Algoritmo genético guiado por autómatas de LTLp.
+  - Mide distancia, esparsidad, diversidad e *implausibility*; esta última es la
+    distancia a la traza de entrenamiento más cercana.
+- **También en esta línea:** DiCE4EL, LORELEY y Buliga et al. (arXiv 2403.11642, con
+  restricciones Declare).
+
+**Simulación con cambios por edición de un modelo** (sin generador aprendido condicionado):
+- Simod y DeepSimulator.
+- AgentSimulator (Kirchdorfer et al., ICPM 2024): el what-if queda como extensión
+  planeada.
+- Rediseño con LLMs (arXiv 2611.19623, DH-BPR): el LLM propone y la simulación evalúa.
+- Özdemir, Kirchdorfer et al. (arXiv 2505.22316, 2025): la evaluación estándar compara
+  contra un log de test, y *"does not adequately distinguish between the intrinsic
+  quality of the BPS model and the complexity introduced by concept drift"*. Proponen un
+  marco de utilidad, que en sus experimentos usa un modelo *ground truth* sintético.
+
+**Resultado de la búsqueda.** No se encontró ningún generador aprendido y condicionado,
+aparte de Dynamics, que permita especificar comportamiento ausente del log. Dynamics no
+mide la calidad del log generado frente al log base. Las medidas de calidad de
+comportamiento nuevo que existen están en áreas vecinas:
+- en counterfactuals, la plausibilidad se mide como cercanía a los datos observados;
+- en AVATAR, la validez se mide contra un sistema *ground truth* sintético.
+
+**Pendiente (no accesible sin login de Springer o con error 403).**
+- Revisión sistemática de Kuhn, Zisgen, Grüger, Maldonado, Koschmider, Bergmann,
+  *"A systematic review of synthetic event data generation"* (Process Science, 2026,
+  10.1007/s44311-026-00060-w).
+- Extensión de CVAE en Process Science (10.1007/s44311-025-00017-5).
+- Casciani et al. 2026.
+- Texto completo de Käppel et al. 2026.
