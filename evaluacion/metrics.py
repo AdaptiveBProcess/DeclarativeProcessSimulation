@@ -75,9 +75,17 @@ def load_log(path: str) -> pd.DataFrame:
             rename[src] = target
     df = df.rename(columns=rename)
 
+    # pandas >= 2 infiere el formato del primer valor y deja en NaT los que no lo
+    # siguen (p.ej. timestamps sin fraccion de segundo mezclados con otros que la
+    # tienen); ISO8601 acepta las dos formas. pandas 1.x parsea cada valor por separado.
+    formato = {"format": "ISO8601"} if int(pd.__version__.split(".")[0]) >= 2 else {}
     for col in ("start_timestamp", "end_timestamp"):
         if col in df.columns:
-            s = pd.to_datetime(df[col], errors="coerce", utc=True)
+            nulos = int(df[col].isna().sum())
+            s = pd.to_datetime(df[col], errors="coerce", utc=True, **formato)
+            if int(s.isna().sum()) > nulos:
+                warnings.warn(f"load_log: {int(s.isna().sum()) - nulos} valores de {col} "
+                              f"no se pudieron leer como fecha ({path})")
             df[col] = s.dt.tz_convert(None)
 
     missing = [c for c in ("caseid", "task") if c not in df.columns]
@@ -233,7 +241,7 @@ def compute_2gd(df_ref: pd.DataFrame, df_sim: pd.DataFrame) -> float:
         sort_col = "start_timestamp" if "start_timestamp" in df.columns else "end_timestamp"
         bg: Counter = Counter()
         for _, grp in df.sort_values(["caseid", sort_col]).groupby("caseid", sort=False):
-            tasks = grp.sort_values(sort_col)["task"].tolist()
+            tasks = grp.sort_values(sort_col, kind="mergesort")["task"].tolist()
             bg.update(zip(tasks[:-1], tasks[1:]))
         return bg
 
@@ -614,7 +622,7 @@ def compute_conf(
     ts_col = "start_timestamp" if "start_timestamp" in df_sim.columns else "end_timestamp"
     projected_log: List[List[str]] = []
     for _, grp in df_sim.sort_values(["caseid", ts_col]).groupby("caseid", sort=False):
-        projected_log.append(grp.sort_values(ts_col)["task"].tolist())
+        projected_log.append(grp.sort_values(ts_col, kind="mergesort")["task"].tolist())
 
     # Fase 3: conformance checking con pm4py apply_list (nivel bajo, evita el bug)
     try:

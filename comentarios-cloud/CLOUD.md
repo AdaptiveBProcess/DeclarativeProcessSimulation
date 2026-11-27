@@ -2821,3 +2821,76 @@ A-B-C-E).
 - **CVAE se entrena una vez por regla**; RULE-GAN y Dynamics, una vez por log.
 - **El tiempo de CVAE incluye el costo de ray tune**: un reporte por época y un
   checkpoint cada 50.
+
+### 29.12 Revisión de las métricas y de la configuración de los generadores (2026-11-27)
+
+**Métricas comparadas con `log_distance_measures` 2.0.0** (Chapela-Campa et al.; es la
+que usa CVAE en `evaluation/compute_log_distance_measure.py`):
+
+| Métrica | Nuestra implementación | Referencia | Efecto en RE con r1 |
+|---|---|---|---|
+| RED | Posición relativa de cada inicio dentro del ciclo, en [0, 1]; no cambia si se escalan los tiempos | Horas desde el inicio del caso de cada inicio de evento (en bins de 1 h), con Wasserstein | Cambia el orden entre Dynamics y CVAE: nuestra 0,063 y 0,102; la de referencia 0,500 y 0,458 |
+| CTD | Wasserstein continuo sobre max(fin) − min(inicio), en segundos | Lo mismo, con bins de 1 h | Mismo orden (nuestra 1,16 / 1,14 / 1,30 h; referencia 1,00 / 1,02 / 1,29) |
+| 2GD | Distancia de variación total entre distribuciones de bigramas, sin marcas de inicio ni fin | Bigramas con relleno de inicio y fin; diferencias de frecuencias absolutas / (total 1 + total 2) | Con logs de distinto tamaño la de referencia mide el tamaño: con la misma distribución, 99 contra 16 trazas da 0,722. Con relleno y frecuencias normalizadas: Dynamics 0,343, RULE-GAN 0,173, CVAE 0,004 (sin relleno: 0,284, 0,153, 0,005) |
+
+- **Casos conocidos (correctos):**
+  - 2GD: logs idénticos 0; AB-BC contra AB-BD 0,5; misma distribución con distinto
+    tamaño 0.
+  - CTD: ciclos de 180 contra 240 s dan 60.
+  - Damerau-Levenshtein: AB contra BA da 0,5.
+  - Novedad: 0,5 y 0,5 en un caso armado.
+- **Sin relleno, 2GD no ve dónde termina la traza:** A-B-C contra A-B da 0,5, por el
+  bigrama que falta, y no detecta el fin distinto.
+- **CONF de CVAE** (Declare4Py: DeclareMiner con soporte 0,9 y cardinalidad 2;
+  MPDeclareAnalyzer), sobre los mismos logs:
+  - El modelo incluye End(E), Exactly1 y Absence2 de A, B y E. Nada sobre C ni D.
+  - CONF: Dynamics 0,629, RULE-GAN 0,936, CVAE 0,999.
+  - Plausibilidad estricta: 0,135, 0,484 y 0,991–0,996.
+  - Con nuestro CONF (MINERful + pm4py), RULE-GAN da 0,878 de CONF y 0,662 estricta,
+    porque pm4py no tiene End y `atmost1` no está mapeado.
+- **Referencia de tiempos.** El ciclo medio de las 16 trazas de test que cumplen r1 es
+  1,46 h; el de las 99 del train, 2,09 h. Entre los dos logs reales, el CTD ya vale
+  0,69 h.
+- **Ciclo medio generado:** Dynamics 0,30 h, RULE-GAN 0,80 h, CVAE 2,29 h.
+
+**Correcciones en `evaluacion/metrics.py`** (no cambian ningún resultado de RE;
+`por_corrida.csv` queda idéntico):
+- `load_log`: con pandas ≥ 2 (entorno cvae), `to_datetime` dejaba en NaT los timestamps
+  sin fracción de segundo: 2.304 de 2.310 en `comun/RunningExample/log.csv`. Ahora usa
+  `format="ISO8601"` y avisa si quedan NaT.
+- En `deep_generator` (pandas 1.5.3) no había NaT, así que la evaluación de 29.11 era
+  válida.
+- `compute_2gd` y `compute_conf` ordenaban cada traza por timestamp con un
+  ordenamiento no estable. Con más de 16 eventos y empates (BPIC2012) podía
+  reordenarlos. Ahora usan mergesort: los empates quedan en el orden del log.
+
+**Configuración de los generadores:**
+- **Dynamics: coincide con su `dg_prediction.py` de Zenodo.**
+  - Usa el modelo de RunningExample que señala ese script (`20240411_C51DBDD1…`,
+    shared_cat, n-grama 5, 100 neuronas).
+  - Parámetros: `pred_log`, `Rules Based Random Choice`, `rep` 1, dos timestamps,
+    `include_org_log` False.
+  - Con `max_trace_size` 5, el bucle genera como mucho 4 actividades.
+- **RULE-GAN:**
+  - El modelo reentrenado tiene los hiperparámetros de V4 (64/4/3/256/16, tasas
+    1e-4/2e-4, betas 0/0,9).
+  - El entrenador no tiene esquemas que dependan del total de épocas, así que entrenar
+    801 equivale a las primeras 801 de una corrida de 1.000.
+  - **Error en la codificación del fin de traza.** `GANSamplesCreator.create_samples`
+    deja en ceros las posiciones posteriores a la última actividad y nunca escribe el
+    token `end`:
+    - en el train de RE, 313 de 433 trazas tienen una fila de relleno en cero y ninguna
+      fila tiene `end`;
+    - el generador termina en softmax, así que no puede producir ceros;
+    - después de A-B-C-E, la 5.ª posición sale casi uniforme (`end` 0,195, `start` 0,155,
+      el resto entre 0,091 y 0,159);
+    - el decodificador solo corta si muestrea `end`, de ahí las trazas con una actividad
+      después de E (54% en 29.11).
+    Afecta a todos los modelos RULE-GAN entrenados, incluidas las búsquedas de 29.7 a
+    29.10.
+- **CVAE:**
+  - Hiperparámetros del paper; `load_state_dict` estricto.
+  - Genera con z ~ N(0, 1) y la condición `deviant`, y decodifica con argmax, como su
+    `generate_log`. `IS_AUTOREGRESSIVE` no lo usa el código.
+  - Su código normaliza el tiempo con el percentil 95 del TRAIN (21,0 min) y lo
+    desnormaliza con el del log completo (20,6 min).
