@@ -2732,3 +2732,92 @@ es la ganadora de PE.
 - RE: 0,5 en 10 de 12 configuraciones (0,6 y 0,7 en una cada una).
 - PE: 0,5 y 0,6 en 4 cada una; 0,7 en 2; 0,85 y 1,0 en una.
 - Las dos ganadoras quedaron en 0,5, el mínimo de la grilla.
+
+### 29.11 Primera comparación: RunningExample con r1, escenario restrictivo (2026-11-27)
+
+**Decisiones del usuario.**
+- Log RunningExample y regla r1 (Task B >> Task C), con los eventos ordenados por
+  inicio.
+- CVAE entra en dos filas: su método (genera con la etiqueta y no verifica la regla) y
+  con el mismo rechazo que Dynamics y RULE-GAN.
+
+**Hallazgo: el soporte de r1 depende del orden de los eventos.** En RE, C y D empiezan
+en el mismo instante en los 150 casos que tienen las dos. Con r1, en el log completo:
+
+| Orden de los eventos | Casos que cumplen r1 | Qué variantes cuentan |
+|---|---|---|
+| Por inicio, empates en el orden del log (`evaluate_condition_list`) | 115 de 540 (21,3%) | Solo A-B-C-E |
+| Por fin | 194 (35,9%) | A-B-C-E y 79 de los A-B-?-?-E |
+| Orden parcial por rango de inicio (`case_satisfies_rule`, `evaluate_condition`) | 265 (49,1%) | Todas las que tienen C |
+
+- El 35,9% que figuraba en 29.2 y en el `.ini` sale de ordenar por fin. Ya se corrigió el
+  comentario del `.ini`.
+- r2, r3 y r4 dan lo mismo con cualquier orden.
+- En las trazas generadas no hay empates de inicio, así que las dos funciones coinciden
+  y el problema afecta solo a las referencias reales.
+- Con orden por inicio: train 99 de 433 casos, subtrain 78 de 346, validación 21 de 87,
+  test 16 de 107.
+- **Pendiente para el hold-out:** `rule_gan/entrenar.py --excluir-regla` usa
+  `case_satisfies_rule`. Con r1 sacaría las 219 trazas de train con C, en vez de las 99
+  A-B-C-E.
+
+**Configuración** (5 corridas por enfoque, semillas 0 a 4, 107 trazas por corrida = casos
+de test; presupuesto de 10x en los que rechazan):
+- **Dynamics:** su modelo publicado con la corrección B. Ahora `predictor_corregido.py`
+  anota cada traza generada para contar intentos.
+- **RULE-GAN:**
+  - V4, la ganadora de la grilla en RE, reentrenada con el train completo (433 casos,
+    801 iteraciones, 93 s).
+  - `generar.py` ya no usa `GANPredictor`: genera con el checkpoint y la temperatura de
+    la selección (801, T = 0,5), con la misma decodificación que `seleccion.generar_libre`.
+  - Acepta la traza si cumple r1, evaluada con `cumple_regla`.
+- **CVAE:**
+  - `cvae/entrenar.py` entrena con su código (c3be4b0), su procedimiento
+    (`run_pipeline.py`) y sus hiperparámetros del paper.
+  - Datos: TRAIN = subtrain, VAL = validación; etiqueta `deviant` si cumple r1.
+  - Un solo timestamp por evento: el de inicio.
+  - Early stopping en la época 1.442 y checkpoint elegido 1.350, con su criterio de menor
+    `loss` de entrenamiento con w_kl = 1. Duró 645 s.
+  - `loss` de entrenamiento 8,5 contra 64,7 de validación.
+  - `generar_regla.py` genera sin rechazo y con rechazo.
+
+**Resultados** (`experimentos/resultados/RunningExample/r1_directly_TaskB_TaskC/`, media
+de 5 corridas). La fidelidad se mide contra las 16 trazas de test que cumplen r1 (todas
+A-B-C-E).
+
+| Dimensión | Métrica | Train filtrado | Dynamics | RULE-GAN | CVAE | CVAE + rechazo |
+|---|---|---|---|---|---|---|
+| Eficiencia | Entrenamiento (s) | | (publicado) | 92,8 | 645 (por regla) | 645 (por regla) |
+| | Generación (s) | | 72,5 | 0,9 | 1,6 | 2,9 |
+| | Intentos por traza | | 1,07 | 3,62 | 1,00 | 1,01 |
+| Fidelidad | RED | 0,014 | 0,063 | 0,130 | 0,102 | 0,102 |
+| | CTD (h) | 0,69 | 1,16 | 1,14 | 1,30 | 1,28 |
+| | 2GD | 0 | 0,284 | 0,153 | 0,005 | 0,003 |
+| | freq_act | 0 | 0,214 | 0,036 | 0,002 | 0,002 |
+| Novedad | Trazas nuevas | 0 | 0,865 | 0,544 | 0,017 | 0,011 |
+| | Novedad no pedida | 0 | 0,865 | 0,310 | 0,004 | 0,004 |
+| Control | Cumplen r1 | 1 | 1 | 1 | 0,994 | 1 |
+| Plausibilidad | CONF | 1 | 0,535 | 0,878 | 0,999 | 0,999 |
+| | Estricta | 1 | 0,135 | 0,662 | 0,996 | 0,996 |
+| | Rol-actividad | 1 | 0,731 | 0,910 | (sin roles) | (sin roles) |
+| Diversidad | Damerau-Levenshtein (referencia: 0) | 0 | 0,205 | 0,151 | 0,007 | 0,005 |
+
+**Variantes generadas** (535 trazas por enfoque):
+- **Dynamics:** A-B-C 28%; A-B-C seguida de B, D, C o A, 12–16% cada una; A-B-C-E (la
+  real) 13,5%. Al cumplirse la regla, elige la siguiente actividad al azar (29.3).
+- **RULE-GAN:** A-B-C-E 45,6%. En el 54% de las trazas sigue una actividad después de
+  E (B 15,7%, D 13,1%, E 10,1%, A 7,9%, C 4,7%), y A-B-C-C-E aparece en el 2,8%.
+- **CVAE:** A-B-C-E 98,3%. El 1,7% restante: A-B-C-C-E, A-B-E, A-B-C y A-B-C-E-E.
+  Además, CVAE informa que puso en 0 el 13–15% de sus tiempos, que salían negativos.
+
+**Limitaciones de la medición:**
+- **El modelo DECLARE es permisivo en RE.** Tiene 13 restricciones (soporte ≥ 0,9), todas
+  sobre A, B y E, y no hay "E al final" ni "C una vez". Por eso A-B-C-E-D, A-B-C-E-C y
+  A-B-C-C-E no violan nada, y la novedad válida de RULE-GAN (0,206) cuenta trazas
+  implausibles.
+- **La referencia de fidelidad es chica:** 16 trazas de una sola variante.
+- **CVAE no genera duraciones** (inicio = fin), lo que afecta RED y CTD.
+- **El entrenamiento de Dynamics no se midió**, porque se usa su modelo publicado.
+- **CVAE se entrena una vez por regla**; RULE-GAN y Dynamics, una vez por log.
+- **El tiempo de CVAE incluye el costo de ray tune**: un reporte por época y un
+  checkpoint cada 50.

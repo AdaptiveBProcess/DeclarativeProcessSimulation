@@ -1,0 +1,26 @@
+enfoque,variante,cumple,en_train,trazas
+CVAE,Task A > Task B > Task C > Task E,True,True,526
+CVAE,Task A > Task B > Task C > Task C > Task E,True,False,4
+CVAE,Task A > Task B > Task E,False,False,3
+CVAE,Task A > Task B > Task C,True,False,1
+CVAE,Task A > Task B > Task C > Task E > Task E,True,False,1
+CVAE + rechazo,Task A > Task B > Task C > Task E,True,True,529
+CVAE + rechazo,Task A > Task B > Task C > Task C > Task E,True,False,4
+CVAE + rechazo,Task A > Task B > Task C,True,False,1
+CVAE + rechazo,Task A > Task B > Task C > Task E > Task E,True,False,1
+Dynamics,Task A > Task B > Task C,True,False,150
+Dynamics,Task A > Task B > Task C > Task B,True,False,86
+Dynamics,Task A > Task B > Task C > Task D,True,False,81
+Dynamics,Task A > Task B > Task C > Task C,True,False,80
+Dynamics,Task A > Task B > Task C > Task E,True,True,72
+Dynamics,Task A > Task B > Task C > Task A,True,False,66
+RULE-GAN,Task A > Task B > Task C > Task E,True,True,244
+RULE-GAN,Task A > Task B > Task C > Task E > Task B,True,False,84
+RULE-GAN,Task A > Task B > Task C > Task E > Task D,True,False,70
+RULE-GAN,Task A > Task B > Task C > Task E > Task E,True,False,54
+RULE-GAN,Task A > Task B > Task C > Task E > Task A,True,False,42
+RULE-GAN,Task A > Task B > Task C > Task E > Task C,True,False,25
+RULE-GAN,Task A > Task B > Task C > Task C > Task E,True,False,15
+RULE-GAN,Task A > Task B > Task B > Task C > Task E,True,False,1
+Test que cumple (referencia),Task A > Task B > Task C > Task E,True,True,16
+Train filtrado,Task A > Task B > Task C > Task E,True,True,99

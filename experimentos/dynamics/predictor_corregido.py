@@ -54,6 +54,21 @@ def _guardadas(parms):
     return total, cumplen
 
 
+def carpeta_intentos(traces_gen_path):
+    """Carpeta donde cada proceso anota sus intentos (fuera de traces_generated, que el
+    predictor lee como trazas guardadas)."""
+    return os.path.join(os.path.dirname(os.path.normpath(traces_gen_path)), 'intentos')
+
+
+def _registrar_intento(parms, cond, acepta):
+    """Una linea por traza generada: cumple la regla (0/1), aceptada (0/1). Solo mide
+    la eficiencia; no cambia la generacion."""
+    carpeta = carpeta_intentos(parms['traces_gen_path'])
+    os.makedirs(carpeta, exist_ok=True)
+    with open(os.path.join(carpeta, f'{os.getpid()}.txt'), 'a') as f:
+        f.write(f'{int(bool(cond))},{int(bool(acepta))}\n')
+
+
 def _recortar(parms):
     """Deja exactamente la meta (en orden de caso) y devuelve los casos conservados."""
     total, cumplen = _meta(parms)
@@ -208,6 +223,7 @@ class EventLogPredictorCorregido(elp.EventLogPredictor):
 
                     # ── CORRECCION: aceptar mientras falten trazas de su clase ──
                     acepta = (n_cumplen < cumplen) if cond else ((n_guardadas - n_cumplen) < total - cumplen)
+                    _registrar_intento(parms, cond, acepta)
                     if acepta:
                         generated_event_log.extend(trace)
                         df_trace['caseid'] = 'gen-' + df_trace['caseid']

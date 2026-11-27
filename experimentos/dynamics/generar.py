@@ -88,6 +88,19 @@ def _limpiar_modelo(carpeta: Path, log: str) -> dict:
     return salidas
 
 
+def _intentos(carpeta: Path) -> dict:
+    """Trazas generadas, cuantas cumplian la regla y cuantas se aceptaron, segun lo que
+    anota predictor_corregido.py (una linea por traza generada). Borra las anotaciones."""
+    carpeta_i = carpeta / "parameters" / "intentos"
+    filas = []
+    if carpeta_i.exists():
+        for p in carpeta_i.glob("*.txt"):
+            filas += [tuple(map(int, l.split(","))) for l in p.read_text().split()]
+        shutil.rmtree(carpeta_i)
+    return {"intentos": len(filas), "intentos_cumplen": sum(c for c, _ in filas),
+            "intentos_aceptados": sum(a for _, a in filas)}
+
+
 def _limpiar_log(destino: Path, log: str) -> dict:
     """Quita los eventos 'start'/'end' (como hallucinate en el pipeline de Dynamics)
     y borra el .xes, que el predictor escribe antes de ese filtrado."""
@@ -131,6 +144,7 @@ def generar(log: str, regla: str, corridas: int, semilla: int, variante: str,
             shutil.rmtree(destino)
         destino.mkdir(parents=True)
 
+        _intentos(carpeta_modelo)              # descarta anotaciones de una corrida cortada
         inicio = datetime.datetime.now()
         pr.ModelPredictor(
             _parametros(log, carpeta_modelo.name, variante),
@@ -138,6 +152,8 @@ def generar(log: str, regla: str, corridas: int, semilla: int, variante: str,
             output_folder=str(destino),
             rules_path=str(ini),
         )
+        segundos = round((datetime.datetime.now() - inicio).total_seconds(), 1)
+        intentos = _intentos(carpeta_modelo)
         for nombre, p in _limpiar_modelo(carpeta_modelo, log).items():
             shutil.move(str(p), str(destino / nombre))
         shutil.copy(ini, destino / "regla.ini")
@@ -146,7 +162,8 @@ def generar(log: str, regla: str, corridas: int, semilla: int, variante: str,
             "semilla": sem, "variante": variante, "modelo": carpeta_modelo.name,
             "correccion_B": not publicado,
             "inicio": inicio.isoformat(timespec="seconds"),
-            "segundos": round((datetime.datetime.now() - inicio).total_seconds(), 1),
+            "segundos": segundos,
+            **(intentos if not publicado else {}),
             **_limpiar_log(destino, log),
         }
         (destino / "meta.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")

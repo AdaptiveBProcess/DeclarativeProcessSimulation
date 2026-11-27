@@ -18,7 +18,8 @@ experimentos/
     generar.py
     modelos/, ejecuciones/        (no versionados)
   rule_gan/
-    entrenar.py, generar.py
+    entrenar.py
+    generar.py                    checkpoint y temperatura elegidos + rechazo por la regla
     seleccion.py                  evaluación contra la validación (métricas, objetivo)
     buscar_amplia.py              Fase 1a: búsqueda amplia con TPE (corrida en RE y PE)
     buscar_grilla.py              Fase 1b: grilla de 12 configuraciones, en cada log
@@ -27,9 +28,13 @@ experimentos/
   cvae/
     README.md                     cómo obtener el código, la versión usada y el entorno
     requirements_windows.txt
-    generar.py
+    generar.py                    modelos publicados (BPIC2012, Traffic Fines, Sepsis)
+    entrenar.py                   entrena en un log de Dynamics con la etiqueta de una regla
+    generar_regla.py              genera con ese modelo; --rechazo descarta lo que no cumple
     repo/, repo_icpm2024/         clon de CVAE y copia en la versión del paper (no versionados)
-    ejecuciones/                  (no versionado)
+    datos/, modelos/, ejecuciones/ (no versionados)
+  evaluar.py                      métricas por dimensión de todos los enfoques bajo una regla
+  resultados/<log>/<regla>/       por_corrida.csv, resumen.csv, variantes.csv (versionados)
 ```
 
 Las ejecuciones quedan en `<enfoque>/ejecuciones/<log>/<regla>/corrida_XX/`, con el
@@ -43,7 +48,7 @@ modelo, tiempo, número de trazas).
 | Dynamics, RULE-GAN | `deep_generator` (Python 3.9, TensorFlow 2.13) | Requiere el submódulo `GenerativeLSTM` inicializado |
 | CVAE | `cvae` (Python 3.11, PyTorch 2.0.1) | Ver `cvae/README.md` |
 
-## Pasos (RunningExample)
+## Pasos (RunningExample, regla r1)
 
 ```bash
 # 1. Dynamics: paquete de Zenodo, modelos publicados y log/división comunes
@@ -51,15 +56,25 @@ python experimentos/dynamics/descargar_paquete.py
 python experimentos/comun/preparar_logs_dynamics.py
 
 # 2. Dynamics: generar (sin reentrenar)
-python experimentos/dynamics/generar.py --log RunningExample --regla r1_directly_TaskB_TaskC --corridas 3
+python experimentos/dynamics/generar.py --log RunningExample --regla r1_directly_TaskB_TaskC --corridas 5
 
-# 3. RULE-GAN: entrenar una vez por log y generar por regla
-python experimentos/rule_gan/entrenar.py --log RunningExample
-python experimentos/rule_gan/generar.py --log RunningExample --regla r1_directly_TaskB_TaskC --corridas 3
+# 3. RULE-GAN: reentrenar la configuración elegida en la grilla con el train completo
+#    (V4 en RE, 801 iteraciones) y generar con su checkpoint y temperatura
+python experimentos/rule_gan/entrenar.py --log RunningExample --conjunto train --config '{"epochs": 801}'
+python experimentos/rule_gan/generar.py --log RunningExample --regla r1_directly_TaskB_TaskC \
+    --modelo <carpeta> --epoca 801 --temperatura 0.5 --corridas 5
 
-# 4. CVAE (entorno cvae): generar con sus modelos publicados (ver cvae/README.md)
-python experimentos/cvae/generar.py --dataset bpic2012_a --corridas 3
+# 4. CVAE (entorno cvae): entrenar con la etiqueta de la regla y generar, sin y con rechazo
+python experimentos/cvae/entrenar.py --log RunningExample --regla r1_directly_TaskB_TaskC
+python experimentos/cvae/generar_regla.py --log RunningExample --regla r1_directly_TaskB_TaskC --corridas 5
+python experimentos/cvae/generar_regla.py --log RunningExample --regla r1_directly_TaskB_TaskC --corridas 5 --rechazo
+
+# 5. Métricas (entorno deep_generator)
+python experimentos/evaluar.py --log RunningExample --regla r1_directly_TaskB_TaskC
 ```
+
+Para BPIC2012 y Traffic Fines, CVAE usa sus modelos publicados:
+`python experimentos/cvae/generar.py --dataset bpic2012_a --corridas 3`.
 
 ## Selección del modelo RULE-GAN
 
@@ -115,6 +130,15 @@ mejor).
   de aceptación; modelo, muestreo y filtro de reglas son los originales. Con
   `--publicado` se corre sin la corrección.
 - **Presupuesto de intentos.** 10 veces el número de trazas pedidas, igual en
-  Dynamics (corregido) y en RULE-GAN.
+  Dynamics (corregido), RULE-GAN y CVAE con rechazo. Las tres anotan los intentos en
+  `meta.json` (eficiencia).
+- **Semántica de la regla.** La secuencia de actividades ordenada por
+  `start_timestamp`, con los empates en el orden del log, evaluada con
+  `evaluate_condition_list` (`evaluacion.metricas_cambio.cumple_regla`). RULE-GAN y CVAE
+  con rechazo aceptan con esa misma función; Dynamics conserva su `evaluate_condition`
+  (en las trazas generadas no hay empates de inicio y ambas coinciden).
+- **CVAE en los logs de Dynamics.** Su código y sus hiperparámetros del paper; train =
+  subtrain y su validación = la validación común (early stopping). Un solo timestamp por
+  evento (el de inicio): no genera duraciones ni recursos.
 - **Semillas.** Cada corrida fija `random`, `numpy` y `tensorflow` con
   `semilla + corrida - 1`.

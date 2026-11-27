@@ -100,16 +100,21 @@ def _con_temperatura(p: np.ndarray, t: float) -> np.ndarray:
 
 
 def generar_libre(gen, mp: dict, n: int, temperatura: float, semilla: int, inicio,
-                  lote: int = 64, presupuesto: int = 10):
-    """n trazas sin regla. Misma decodificacion que GANPredictor._decode_trace
-    (corta en 'end', salta 'start', reescala dur/wait), con temperatura.
+                  lote: int = 64, presupuesto: int = 10, acepta=None, contadores: dict = None):
+    """n trazas. Misma decodificacion que GANPredictor._decode_trace (corta en 'end',
+    salta 'start', reescala dur/wait), con temperatura.
+
+    Sin `acepta` (seleccion) se guarda toda traza no vacia. Con `acepta` (generacion
+    bajo una regla, generar.py) se guarda solo si acepta(lista de actividades) es True;
+    el presupuesto (presupuesto * n trazas generadas) es el mismo en ambos casos.
+    Si se pasa `contadores`, se llena con intentos, vacias, rechazadas y aceptadas.
     Devuelve (DataFrame, % de trazas vacias descartadas)."""
     from GenerativeGAN.model_prediction.gan_predictor import GANPredictor
     rng = np.random.default_rng(semilla)
     index_ac = {int(k): v for k, v in mp["index_ac"].items()}
     index_rl = {int(k): v for k, v in mp["index_rl"].items()}
     n_ac, n_rl = len(index_ac), len(index_rl)
-    filas, aceptadas, vacias, intentos = [], 0, 0, 0
+    filas, aceptadas, vacias, intentos, rechazadas = [], 0, 0, 0, 0
     while aceptadas < n and intentos < presupuesto * n:
         ruido = rng.normal(0, 1, (lote, int(mp["latent_dim"]))).astype(np.float32)
         salida = gen.predict(ruido, verbose=0)
@@ -140,9 +145,15 @@ def generar_libre(gen, mp: dict, n: int, temperatura: float, semilla: int, inici
             if not traza:
                 vacias += 1
                 continue
+            if acepta is not None and not acepta([e["task"] for e in traza]):
+                rechazadas += 1
+                continue
             caso = f"GEN{aceptadas:05d}"
             filas.extend({"caseid": caso, **e} for e in traza)
             aceptadas += 1
+    if contadores is not None:
+        contadores.update(intentos=intentos, vacias=vacias, rechazadas=rechazadas,
+                          aceptadas=aceptadas)
     df = pd.DataFrame(filas, columns=["caseid", "task", "user", "start_timestamp", "end_timestamp"])
     return df, 100.0 * vacias / max(intentos, 1)
 
