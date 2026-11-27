@@ -69,6 +69,12 @@ class GANTrainerV2:
         self.time2vec_dim = int(params.get('time2vec_dim', 8))
         self.bg_lambda    = float(params.get('bg_lambda', 0.0))
         self.ct_lambda    = float(params.get('ct_lambda', 0.0))
+        # Adam del critico (d) y del generador (g). Los valores por defecto son los
+        # que usaron las versiones V2-V6.
+        self.lr_d         = float(params.get('lr_d', 0.0001))
+        self.lr_g         = float(params.get('lr_g', 0.0002))
+        self.beta_1       = float(params.get('beta_1', 0.0))
+        self.beta_2       = float(params.get('beta_2', 0.9))
 
         # ── 1. Load & preprocess ──────────────────────────────────────────────
         self.log = self._load_log(params)
@@ -248,9 +254,9 @@ class GANTrainerV2:
         target_ct = tf.reduce_mean(tf.reduce_sum(dur_tr + wait_tr, axis=1))
 
         d_opt = tf.keras.optimizers.Adam(
-            learning_rate=0.0001, beta_1=0.0, beta_2=0.9)
+            learning_rate=self.lr_d, beta_1=self.beta_1, beta_2=self.beta_2)
         g_opt = tf.keras.optimizers.Adam(
-            learning_rate=0.0002, beta_1=0.0, beta_2=0.9)
+            learning_rate=self.lr_g, beta_1=self.beta_1, beta_2=self.beta_2)
 
         # Local references so @tf.function closures capture TF objects, not self
         generator     = self.generator
@@ -320,7 +326,9 @@ class GANTrainerV2:
 
         print(f'[GANTrainerV2] Iniciando WGAN-GP: {self.epochs} epochs, '
               f'n_critic={self.n_critic}, λ={self.gp_lambda}, '
-              f'batch={self.batch_size}, latent_dim={self.latent_dim}')
+              f'batch={self.batch_size}, latent_dim={self.latent_dim}, '
+              f'lr_d={self.lr_d:g}, lr_g={self.lr_g:g}, '
+              f'betas=({self.beta_1:g}, {self.beta_2:g})')
         print('[GANTrainerV2] Compilando pasos de entrenamiento (primera epoch mas lenta)...')
         t0 = time.time()
 
@@ -383,6 +391,10 @@ class GANTrainerV2:
             'gp_lambda':       self.gp_lambda,
             'bg_lambda':       self.bg_lambda,
             'ct_lambda':       self.ct_lambda,
+            'lr_d':            self.lr_d,
+            'lr_g':            self.lr_g,
+            'beta_1':          self.beta_1,
+            'beta_2':          self.beta_2,
         }
         sup.create_json(model_params,
                         os.path.join(params_dir, 'model_parameters.json'))

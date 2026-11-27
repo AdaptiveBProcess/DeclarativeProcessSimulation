@@ -17,6 +17,8 @@ Objetivo escalar (para la busqueda): promedio de cada metrica dividida por la de
 
 Temperatura: las probabilidades de actividad y de rol de cada posicion se elevan a
 1/T y se renormalizan antes de muestrear (T < 1: mas conservador; T > 1: mas diverso).
+La grilla es {0.5, 0.6, 0.7, 0.85, 1, 1.15, 1.3}; 0.5 y 0.6 se agregaron porque en la
+busqueda amplia de RE se eligio 0.7 (el minimo de entonces) en 28 de 30 configuraciones.
 """
 import json
 import pickle
@@ -29,6 +31,7 @@ AQUI = Path(__file__).resolve().parent
 RAIZ = AQUI.parents[1]
 COMUN = RAIZ / "experimentos" / "comun"
 METRICAS = ["RED", "CTD", "2GD", "freq_act", "1-CONF", "div_gap"]
+TEMPERATURAS = (0.5, 0.6, 0.7, 0.85, 1.15, 1.3)   # ademas de T = 1
 
 
 # ── Datos de referencia ──────────────────────────────────────────────────────
@@ -179,8 +182,22 @@ def evaluar_configuracion(gen, mp: dict, ref: dict, temperatura: float, n_gen: i
     return {**media, **desv}
 
 
+def evaluar_temperaturas(carpeta: Path, epoca: int, ref: dict, ref_v4: dict, temperaturas,
+                         n_gen: int = 5, semilla: int = 0) -> list:
+    """Evalua el checkpoint `epoca` con cada temperatura. Devuelve una fila por
+    temperatura, con el objetivo relativo a V4."""
+    gen, mp = cargar_generador(carpeta, epoca)
+    filas = []
+    for t in temperaturas:
+        f = {"epoca": epoca, "temperatura": t,
+             **evaluar_configuracion(gen, mp, ref, t, n_gen, semilla)}
+        f["objetivo"] = objetivo(f, ref_v4)
+        filas.append(f)
+    return filas
+
+
 def evaluar_modelo(carpeta: Path, ref: dict, ref_v4: dict = None, n_gen: int = 5,
-                   temperaturas=(0.7, 0.85, 1.15, 1.3), semilla: int = 0):
+                   temperaturas=TEMPERATURAS, semilla: int = 0):
     """Elige la epoca con T = 1 y luego la temperatura en esa epoca.
 
     Si ref_v4 es None (primer ensayo = V4), la referencia se toma de este modelo en
@@ -198,11 +215,6 @@ def evaluar_modelo(carpeta: Path, ref: dict, ref_v4: dict = None, n_gen: int = 5
     for f in filas:
         f["objetivo"] = objetivo(f, ref_v4)
     mejor_epoca = min(filas, key=lambda f: f["objetivo"])["epoca"]
-    gen, mp = cargar_generador(carpeta, mejor_epoca)
-    for t in temperaturas:
-        f = {"epoca": mejor_epoca, "temperatura": t,
-             **evaluar_configuracion(gen, mp, ref, t, n_gen, semilla)}
-        f["objetivo"] = objetivo(f, ref_v4)
-        filas.append(f)
+    filas += evaluar_temperaturas(carpeta, mejor_epoca, ref, ref_v4, temperaturas, n_gen, semilla)
     mejor = min(filas, key=lambda f: f["objetivo"])
     return filas, mejor, ref_v4

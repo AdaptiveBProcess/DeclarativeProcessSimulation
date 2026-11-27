@@ -1,6 +1,11 @@
 """
-Busqueda de la configuracion de RULE-GAN para un log, con la validacion (Fase 1 de
-la metodologia de seleccion). El test no se usa.
+Busqueda AMPLIA de la configuracion de RULE-GAN para un log, con la validacion
+(Fase 1a de la metodologia de seleccion). El test no se usa.
+
+Se corrio en RunningExample y PurchasingExample (busqueda/<log>/seleccion/). Con sus
+resultados se redujo el espacio para todos los logs: ver buscar_grilla.py (Fase 1b) y
+comentarios-cloud/CLOUD.md, seccion 29.7. Este script queda para reproducir esa fase;
+la tasa de aprendizaje y las betas quedan en los valores de V2-V6.
 
 Procedimiento:
   1. Primero se evaluan las versiones historicas, en este orden: V4 (fija la
@@ -27,7 +32,7 @@ Resultado en experimentos/rule_gan/busqueda/<log>/<etiqueta>/:
     modelos/           modelos entrenados (no versionado)
 
 Uso:
-    python experimentos/rule_gan/buscar.py --log RunningExample --presupuesto 30
+    python experimentos/rule_gan/buscar_amplia.py --log RunningExample --presupuesto 30
 """
 import argparse
 import json

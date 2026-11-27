@@ -2296,7 +2296,7 @@ START→A y A→B). Pendiente reemplazarlo antes de medir.
 - El λ de la opción (d) se ajusta en la validación. El test se usa una sola vez.
 - En los logs grandes se entrena más: hasta 5.000 épocas, con checkpoints cada 500.
 
-Código en `experimentos/rule_gan/{seleccion,buscar}.py`.
+Código en `experimentos/rule_gan/{seleccion,buscar_amplia}.py` (antes `buscar.py`).
 
 **Qué es una "época" en `GANTrainerV2`.** Es una iteración: 5 pasos del crítico, cada uno
 con medio lote (16 trazas), y 1 paso del generador con 32 trazas. No es una pasada por los
@@ -2305,7 +2305,7 @@ datos.
 **Correcciones (2026-11-20).**
 - **TPE repetía configuraciones.** En RE, 9 de los 30 ensayos fueron configuraciones ya
   entrenadas, con resultado idéntico (misma semilla); quedaron 21 distintas. En PE, 1 de
-  los primeros 19. Ahora `buscar.py` reutiliza el resultado sin volver a entrenar, y el
+  los primeros 19. Ahora `buscar_amplia.py` reutiliza el resultado sin volver a entrenar, y el
   presupuesto cuenta configuraciones distintas.
 - **NaN con duraciones constantes.** En BPIC2012 y Traffic Fines la duración es siempre 0
   (un solo timestamp por evento). La normalización lognorm de `FeaturesMannager` queda en
@@ -2383,3 +2383,77 @@ completa con T = 1 y 5 logs generados, y la diversidad con 2.000 pares.
   41,6. Real contra real con el mismo subconjunto: 2GD 0,088.
 - **Costo.** Duración de reloj: 15,8 h, por suspensiones y tiempo en batería. Según
   Windows, el equipo pasó a batería a la 01:48 y se suspendió repetidamente.
+
+### 29.8 Espacio reducido de hiperparámetros de RULE-GAN (2026-11-27)
+
+**Decisiones del usuario.**
+- La configuración de RULE-GAN se elige **por log**, como en Dynamics.
+- La tasa de aprendizaje entra en la búsqueda. Las betas de Adam quedan fijas.
+- El espacio se reduce a una **grilla de 12 configuraciones** que se prueban todas, en
+  cada log.
+
+**Cómo eligen la arquitectura otros trabajos** (verificado en los papers).
+- **Arquitectura fija para todos los logs:** Tax et al. 2017, ProcessTransformer (solo
+  explora el lote y las cabezas en validación), CVAE y ProcessGAN.
+- **Familia fija con ajuste por log:**
+  - Camargo et al. 2019: búsqueda aleatoria, unos 220 modelos por log.
+  - DeepSimulator: grilla de 48 configuraciones.
+  - CoSMo: grilla.
+  - Teinemaa et al. 2019: TPE por dataset.
+  - Dynamics: 10 ensayos de hyperopt por log, elegidos con val_loss.
+- **Dynamics por dentro:** su paper describe una sola arquitectura, pero sus modelos de
+  Zenodo difieren por log.
+  - RE y PE: shared_cat, n-grama 5, 100 neuronas.
+  - CDM: concatenated, n-grama 10, 50 neuronas.
+  - Sus archivos `OP_*.csv` tienen 10 ensayos por log.
+- **Tasa de aprendizaje en GANs:**
+  - Lucic et al. 2018 la buscan por dataset, y dicen que los valores óptimos *"are
+    different for each data set"*.
+  - Encontraron que β₁ *"does not seem to significantly impact any algorithm"*.
+
+**Tiempo de entrenamiento medido en el mismo equipo** (2026-11-27, enchufado). Dynamics
+corrió con su `ModelTrainer` sin modificar, la configuración publicada y 200 épocas con
+*early stopping*. RULE-GAN es V4 (1.000 iteraciones más la evaluación).
+
+| | RE | PE |
+|---|---|---|
+| Dynamics, una configuración | ~3 min (200 épocas) | ~5 min (paró en la época 96) |
+| RULE-GAN V4, una configuración | ~3 min (2,2 de entrenamiento + 0,7 de evaluación) | ~16 min (11,5 + 4,5) |
+
+Los papers revisados no reportan tiempos de entrenamiento.
+
+**Evidencia de la búsqueda amplia** (29.7; mediana del objetivo por valor, 30
+configuraciones por log):
+
+| Hiperparámetro | RE | PE | En la grilla |
+|---|---|---|---|
+| d_model | 64: 1,00; 32: 1,17 | 64: 0,97; 32: 1,05 | 64 fijo |
+| time2vec_dim | 16: 1,02; 8: 1,18 | 16: 0,97; 8: 1,03 | 16 fijo |
+| Bloques | 3: 1,00; 2: 1,06 | 3: 0,99; 2: 0,99 | 3 fijo |
+| ct_lambda | 0: 1,00; 0,1: 1,01; 1: 1,16 | 0: 0,98; 0,1: 0,99; 1: 1,11 | 0 fijo |
+| bg_lambda | 0: 1,02; 0,05: 1,05; 5: 1,01 (mejor configuración con 0) | 0: 0,97; 0,05: 1,02; 5: 1,07 | 0 fijo |
+| ff_dim | 64: 1,20; 128: 1,05; 256: 0,99 | 64: 1,12; 128: 0,98; 256: 0,98 | {128, 256} |
+| Cabezas | 4: 1,03; 2: 1,06 (ganadora con 4) | 2: 0,98; 4: 1,03 (ganadora con 2) | {2, 4} |
+
+Las ganadoras de la fase 1a (V4 en RE y 64/2/3/128/16 en PE) están en la grilla.
+
+**Grilla** (`experimentos/rule_gan/buscar_grilla.py`):
+- **Variables:**
+  - cabezas {2, 4};
+  - ff_dim {128, 256};
+  - tasas (crítico, generador) {(1e-4, 2e-4), (1e-4, 1e-4), (4e-4, 1e-4)}.
+- **Fijos:**
+  - d_model 64, 3 bloques, time2vec 16, bg_lambda = ct_lambda = 0;
+  - betas (0; 0,9), dropout 0,1, latente 64, lote 32, 5 pasos del crítico, λ del
+    gradient penalty 10, lognorm;
+  - 1.000 iteraciones con checkpoints cada 100.
+- **Temperaturas:** se agregan 0,5 y 0,6, porque en RE se eligió 0,7 (el mínimo de
+  entonces) en 28 de 30 configuraciones.
+- **V4 va primero**, porque fija la referencia del objetivo.
+- **Reutilización:** en RE y PE se reutilizan las 3 configuraciones ya evaluadas en la
+  fase 1a (misma referencia de V4 y mismo modelo DECLARE); solo se evalúan las
+  temperaturas 0,5 y 0,6. Quedan 9 configuraciones por entrenar en cada uno; en BPIC2012,
+  las 12.
+- **Implementación:** `GANTrainerV2` acepta `lr_d`, `lr_g`, `beta_1` y `beta_2`, con los
+  valores de V2–V6 por defecto, y los guarda en `model_parameters.json`. Verificado con
+  un entrenamiento de 2 iteraciones.

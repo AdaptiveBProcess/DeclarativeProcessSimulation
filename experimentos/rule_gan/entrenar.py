@@ -7,13 +7,14 @@ se modifica):
   - Division: se entrena con experimentos/comun/<log>/split/subtrain_caseids.txt
     (train sin la validacion). El test y la validacion no se usan para entrenar.
   - Hiperparametros: por defecto los de V4; se pueden cambiar (ver HIPERPARAMETROS)
-    para la busqueda de experimentos/rule_gan/buscar.py.
+    para las busquedas de experimentos/rule_gan/buscar_amplia.py y buscar_grilla.py.
   - Checkpoints: se guardan los pesos del generador cada `cada` epocas en
     <modelo>/checkpoints/epoca_XXXX.h5 (XXXX = epocas completadas), ademas del
     generador final que guarda el entrenador.
 
-Las tasas de aprendizaje (Adam D 1e-4, G 2e-4, beta1=0, beta2=0.9) quedan fijas en
-el entrenador; son las mismas en las versiones V2 a V6.
+Las tasas de aprendizaje y las betas de Adam son configurables (lr_d, lr_g, beta_1,
+beta_2). Por defecto valen lo mismo que en V2-V6: critico 1e-4, generador 2e-4,
+betas (0, 0.9).
 
 El entrenamiento no depende de la regla. En el hold-out, --excluir-regla quita del
 entrenamiento los casos que cumplen la regla.
@@ -54,6 +55,11 @@ HIPERPARAMETROS = {
     "time2vec_dim": 16,
     "bg_lambda": 0.0,
     "ct_lambda": 0.0,
+    # Adam del critico y del generador (los de V2-V6; Gulrajani et al. 2017 para las betas)
+    "lr_d": 0.0001,
+    "lr_g": 0.0002,
+    "beta_1": 0.0,
+    "beta_2": 0.9,
 }
 
 
