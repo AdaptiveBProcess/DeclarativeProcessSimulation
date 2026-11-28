@@ -2894,3 +2894,81 @@ que usa CVAE en `evaluation/compute_log_distance_measure.py`):
     `generate_log`. `IS_AUTOREGRESSIVE` no lo usa el código.
   - Su código normaliza el tiempo con el percentil 95 del TRAIN (21,0 min) y lo
     desnormaliza con el del log completo (20,6 min).
+
+### 29.13 Corrección del fin de traza en RULE-GAN y grilla repetida en RE y PE (2026-11-27)
+
+**Decisión del usuario:** corregir RULE-GAN y repetir la grilla en RE y PE. Los cambios
+de métricas de 29.12 (RED de referencia, 2GD con relleno de inicio y fin, CONF al estilo
+CVAE) no se aplicaron.
+
+**Corrección (commit a7f7cc6):**
+- `GANSamplesCreator.create_samples(..., relleno_end=True)` llena las posiciones
+  posteriores a la última actividad con el one-hot de `end` en actividad y rol, con
+  dur = wait = 0. Ordena los eventos por `start_timestamp` con mergesort.
+- `GANTrainerV2` usa como `max_trace_size` el largo máximo del log + 1, así toda traza
+  tiene al menos un `end`. Lo registra en `model_parameters.json` (`relleno_end: true`).
+- GANTrainer v1 no cambia.
+- En RE, V4 corregida (última época, T = 1) da 96,8% de variantes reales en 500 trazas
+  libres: ABDE 235, ABDCE 133, ABCE 116.
+
+**Grilla repetida** (`experimentos/rule_gan/busqueda/<log>/grilla_fin/`):
+- Semilla 0, las 12 configuraciones de 29.8, todas reentrenadas (sin reutilizar).
+- Duración: RE 31 min y PE 2,5 h.
+- El objetivo se normaliza por la V4 corregida de cada log, así que no se compara en
+  valor absoluto con el de 29.10. Las métricas sí, porque usan la misma validación.
+
+**Ganadoras:**
+
+| Log | Ganadora | Cabezas | ff_dim | Tasas (crítico, generador) | Época | T | Objetivo | 2.ª |
+|---|---|---|---|---|---|---|---|---|
+| RE | G02 | 2 | 128 | (1e-4, 2e-4) | 801 | 0,6 | 0,571 | G08 (4, 128, 1e-4/2e-4): 0,750 |
+| PE | G08 | 4 | 128 | (1e-4, 2e-4) | 1000 | 0,5 | 0,915 | V4 (4, 256, 1e-4/2e-4): 0,979 |
+
+En la grilla de 29.10 las ganadoras eran V4 en RE y G09 en PE.
+
+**Métricas absolutas en validación**, comparadas con un piso real contra real (5
+muestras del subtrain del tamaño de la validación, contra la validación):
+
+| Log | Modelo | RED | CTD (s) | 2GD | freq_act | 1-CONF | div_gap |
+|---|---|---|---|---|---|---|---|
+| RE | Ganadora 29.10 (V4, con el error) | 0,028 | 3.546 | 0,122 | 0,017 | 0,097 | 0,097 |
+| RE | Ganadora nueva (G02) | 0,025 | 3.378 | 0,031 | 0,010 | 0,005 | 0,003 |
+| RE | Subtrain contra validación | 0,023 | 3.670 | 0,030 | 0,012 | 0,000 | 0,006 |
+| PE | Ganadora 29.10 (G09, con el error) | 0,101 | 1.223.448 | 0,817 | 0,130 | 0,373 | 0,157 |
+| PE | Ganadora nueva (G08) | 0,020 | 1.647.512 | 0,581 | 0,095 | 0,292 | 0,115 |
+| PE | Subtrain contra validación | 0,059 | 1.872.668 | 0,081 | 0,069 | 0,065 | 0,156 |
+
+El modelo DECLARE de CONF se descubre en el subtrain, así que el 1-CONF del piso es
+dentro de muestra.
+
+- **RE:** la ganadora queda en el piso real contra real en todas las métricas. Las 12
+  configuraciones bajan 2GD (de 0,11–0,15 a 0,03–0,05), 1-CONF (de 0,10–0,14 a
+  0,005–0,024) y div_gap (de 0,09–0,12 a 0,003–0,017).
+- **PE:** las métricas de tiempo y diversidad quedan en el piso o por debajo. El
+  control-flow sigue lejos: 2GD 7 veces el piso y 1-CONF 4,5 veces.
+  - La ganadora (época 1000, T = 0,5) genera 432 variantes en 500 trazas libres. Solo
+    el 4,0% son variantes del subtrain, que tiene 62 variantes en 406 trazas.
+  - Los largos sí se parecen: media 15,5 generada contra 16,4 real, mediana 18 en
+    ambas. El percentil 25 es 8 contra 17 (más trazas cortas).
+  - El relleno con `end` es el 63,5% de las filas del tensor de entrenamiento en PE y
+    el 28,7% en RE.
+  - La estimación de Wasserstein del crítico en la última iteración va de 1,2 a 3,1 en
+    PE y de −0,08 a 0,15 en RE (12 configuraciones en cada log).
+
+**Tasas de aprendizaje:** las cuatro configuraciones con (1e-4, 2e-4) (V4, G02, G05,
+G08) son las cuatro primeras en RE. En PE son 1.ª (G08), 2.ª (V4), 6.ª (G05) y última
+(G02).
+
+**Época y temperatura elegidas:**
+- La última época (1000) se elige en 7 de 12 configuraciones en RE y en 3 de 12 en PE,
+  incluida la ganadora de PE.
+- RE: T = 0,5 en 7 configuraciones, 0,6 en 3, 0,7 y 1,0 en una cada una.
+- PE: T = 0,5 en 6, 0,7 y 0,85 en 2 cada una, 0,6 y 1,15 en una cada una.
+- La ganadora de PE quedó en 0,5, el mínimo de la grilla.
+
+**Trazas vacías:** en RE ninguna. En PE aparecen en 8 configuraciones (0,2% en G08 y
+G12; 10,8% en G02). Se descartan y no entran al objetivo. En la grilla de 29.10 no
+había.
+
+**Consecuencia:** los resultados de RULE-GAN de 29.11 (r1 en RE) vienen del modelo con
+el error y no se volvieron a generar.
